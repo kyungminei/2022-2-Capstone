@@ -27,43 +27,45 @@ public class Weapon : MonoBehaviour
             StopCoroutine("Swing");
             StartCoroutine("Swing");
         }
-        else if (type == Type.Range)
+        else if (type == Type.Range && curAmmo > 0)
         {
+            curAmmo--;
             StartCoroutine("Shot");
         }
     }
     IEnumerator Swing()
     {
 
-        yield return new WaitForSeconds(0.1f); // yield : °á°ú¸¦ ³½´Ù
+        yield return new WaitForSeconds(0.1f); // yield : ê²°ê³¼ë¥¼ ë‚¸ë‹¤
         meleeArea.enabled = true;
         trailEffect.enabled = true;
 
-        yield return new WaitForSeconds(0.3f);
+        yield return new WaitForSeconds(0.4f);
+
         meleeArea.enabled = false;
 
         yield return new WaitForSeconds(0.3f);
         trailEffect.enabled = false;
 
-        //yield break; //ÄÚ·çÆ¾ Å»Ãâ
+        //yield break; //ì½”ë£¨í‹´ íƒˆì¶œ
     }
     IEnumerator Shot()
     {
-        //1 ÃÑ¾Ë¹ß»ç
+        //1 ì´ì•Œë°œì‚¬
         GameObject instantBullet = Instantiate(bullet, bulletPos.position, bulletPos.rotation);
         Rigidbody bulletRigid = instantBullet.GetComponent<Rigidbody>();
         bulletRigid.velocity = bulletPos.forward * 50;
 
         yield return null;
 
-        //2 ÅºÇÇ ¹èÃâ
+        //2 íƒ„í”¼ ë°°ì¶œ
         GameObject instantBulletCase = Instantiate(bulletCase, bulletCasePos.position, bulletCasePos.rotation);
         Rigidbody bulletCaseRigid = instantBulletCase.GetComponent<Rigidbody>();
         Vector3 CaseVec = bulletCasePos.forward * Random.Range(-3, -2) + Vector3.up * Random.Range(2, 3);
         bulletCaseRigid.AddForce(CaseVec, ForceMode.Impulse);
-        bulletCaseRigid.AddTorque(Vector3.up * 10, ForceMode.Impulse); //ÅºÇÇ È¸Àü
+        bulletCaseRigid.AddTorque(Vector3.up * 10, ForceMode.Impulse); //íƒ„í”¼ íšŒì „
     }
 
-    //Use() ¸ŞÀÎ·çÆ¾ -> Swing() ¼­ºê·çÆ¾ -> Use() ¸ŞÀÎ·çÆ¾
-    //Use() ¸ŞÀÎ·çÆ¾ + Swing() ÄÚ·çÆ¾ (Co-op)
+    //Use() ë©”ì¸ë£¨í‹´ -> Swing() ì„œë¸Œë£¨í‹´ -> Use() ë©”ì¸ë£¨í‹´
+    //Use() ë©”ì¸ë£¨í‹´ + Swing() ì½”ë£¨í‹´ (Co-op)
 }
