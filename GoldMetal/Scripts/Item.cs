@@ -4,10 +4,9 @@ using UnityEngine;
 
 public class Item : MonoBehaviour
 {
-    public enum Type { Ammo, Coin, Grenade, Heart, Weapon} //enum: ¿­°ÅÇü
+    public enum Type { Ammo, Coin, Grenade, Heart, Weapon} //enum: Â¿Â­Â°Ã…Ã‡Ã¼
     public Type type;
     public int value;
-
 
     Rigidbody rigid;
     SphereCollider sphereCollider;

@@ -60,7 +60,7 @@ public class Player : MonoBehaviour
     MeshRenderer[] meshs;
 
     GameObject nearobject;
-    public Weapon equipWeapon; //ÀåÂøÁßÀÎ ¹«±â
+    public Weapon equipWeapon; //ì¥ì°©ì¤‘ì¸ ë¬´ê¸°
     int equipWeaponIndex= -1;
     float fireDelay;
 
@@ -133,14 +133,14 @@ public class Player : MonoBehaviour
 
     void Turn()
     {
-        //Å°º¸µå È¸Àü
+        //í‚¤ë³´ë“œ íšŒì „
         transform.LookAt(transform.position + movevec);
 
-        //¸¶¿ì½º È¸Àü
+        //ë§ˆìš°ìŠ¤ íšŒì „
         if (fDown && !isDead)
         {
             Ray ray = followCamera.ScreenPointToRay(Input.mousePosition);
-            RaycastHit rayHit; //ray¿¡ ´êÀº ¿ÀºêÁ§Æ® Á¤º¸¸¦ ÀúÀåÇÏ´Â º¯¼ö
+            RaycastHit rayHit; //rayì— ë‹¿ì€ ì˜¤ë¸Œì íŠ¸ ì •ë³´ë¥¼ ì €ì¥í•˜ëŠ” ë³€ìˆ˜
             if (Physics.Raycast(ray, out rayHit, 100))
             {
                 Vector3 nextVec = rayHit.point - transform.position;
@@ -203,7 +203,7 @@ public class Player : MonoBehaviour
 
     void Swap()
     {
-        if (sDown1 && (!hasweapons[0] || equipWeaponIndex == 0)) return; //È¹µæÇÏÁö ¾ÊÀº ¹«±â°Å³ª, ÀÌ¹Ì µé°íÀÖ´Â ¹«±â¸é return
+        if (sDown1 && (!hasweapons[0] || equipWeaponIndex == 0)) return; //íšë“í•˜ì§€ ì•Šì€ ë¬´ê¸°ê±°ë‚˜, ì´ë¯¸ ë“¤ê³ ìˆëŠ” ë¬´ê¸°ë©´ return
         if (sDown2 && (!hasweapons[1] || equipWeaponIndex == 1)) return;
         if (sDown3 && (!hasweapons[2] || equipWeaponIndex == 2)) return;
 
@@ -247,7 +247,7 @@ public class Player : MonoBehaviour
         {
             equipWeapon.Use();
             animator.SetTrigger(equipWeapon.type==Weapon.Type.Melee ? "Doswing" : "Doshot");
-            if (equipWeapon.type == Weapon.Type.Melee) //¿Àµğ¿À Å×½ºÆ®
+            if (equipWeapon.type == Weapon.Type.Melee) //ì˜¤ë””ì˜¤ í…ŒìŠ¤íŠ¸
                 hammerSound.Play();
             fireDelay = 0;
         }
@@ -272,9 +272,9 @@ public class Player : MonoBehaviour
 
     void ReloadOut()
     {
-        int reAmmo = ammo < equipWeapon.maxAmmo ? ammo : equipWeapon.maxAmmo; //maxAmmo:40, ammo:10ÀÏ ¶§, ammo¸¸Å­ ÀåÀüµÇ¾î¾ßÇÔ.
+        int reAmmo = ammo < equipWeapon.maxAmmo ? ammo : equipWeapon.maxAmmo; //maxAmmo:40, ammo:10ì¼ ë•Œ, ammoë§Œí¼ ì¥ì „ë˜ì–´ì•¼í•¨.
         equipWeapon.curAmmo = reAmmo;
-        ammo -= reAmmo; //ÀåÀüÇÑ ¸¸Å­ »©ÁÖ±â
+        ammo -= reAmmo; //ì¥ì „í•œ ë§Œí¼ ë¹¼ì£¼ê¸°
         isReload = false;
     }
 
@@ -285,7 +285,7 @@ public class Player : MonoBehaviour
         if(gDown &&  !isReload && !isSwap && !isShop && !isDead)
         {
             Ray ray = followCamera.ScreenPointToRay(Input.mousePosition);
-            RaycastHit rayHit; //ray¿¡ ´êÀº Á¤º¸¸¦ ÀúÀåÇÏ´Â º¯¼ö
+            RaycastHit rayHit; //rayì— ë‹¿ì€ ì •ë³´ë¥¼ ì €ì¥í•˜ëŠ” ë³€ìˆ˜
             if (Physics.Raycast(ray, out rayHit, 100))
             {
                 Vector3 nextVec = rayHit.point - transform.position;
