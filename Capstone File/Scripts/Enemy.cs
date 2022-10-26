@@ -14,7 +14,7 @@ public class Enemy : MonoBehaviour
     public GameManager manager;
     public Transform Target;
     public bool isChase;
-    public BoxCollider MeleeArea; //∞¯∞›π¸¿ß
+    public BoxCollider MeleeArea; //Í≥µÍ≤©Î≤îÏúÑ
     public GameObject bullet;
     public bool isAttack;
     public bool isDead;
@@ -36,7 +36,7 @@ public class Enemy : MonoBehaviour
 
         if (enemyType!=Type.D)
         {
-            Invoke("ChaseStart", 2.0f);
+            Invoke("ChaseStart", 1.0f);
         }
     }
 
@@ -58,7 +58,7 @@ public class Enemy : MonoBehaviour
         if(nav.enabled && enemyType != Type.D)
         {
             nav.SetDestination(Target.position);
-            nav.isStopped = !isChase;  //¬—¥¬ ¡ﬂ¿Ã∏È æ»∏ÿ√ﬂ∞Ì, ¬—¥¬ ¡ﬂ¿Ã æ∆¥œ∏È ∏ÿ√„
+            nav.isStopped = !isChase;  //Ï´ìÎäî Ï§ëÏù¥Î©¥ ÏïàÎ©àÏ∂îÍ≥†, Ï´ìÎäî Ï§ëÏù¥ ÏïÑÎãàÎ©¥ Î©àÏ∂§
         }
     }
 
@@ -84,6 +84,16 @@ public class Enemy : MonoBehaviour
                     targetRadius = 1.5f;
                     targetRange = 3f;
                     break;
+
+
+                case Type.B:
+                    targetRadius = 1.0f;
+                    targetRange = 3f;
+                    break;
+
+                case Type.C:
+                    targetRadius = 3.0f;
+                    targetRange = 3f;
                 case Type.B:
                     targetRadius = 1f;
                     targetRange = 10f;
@@ -98,7 +108,7 @@ public class Enemy : MonoBehaviour
                 transform.forward, targetRange,
                 LayerMask.GetMask("Player"));
 
-            if (rayHits.Length > 0 && !isAttack) //√Êµπ«—∞‘ ¿÷¿∏∏È
+            if (rayHits.Length > 0 && !isAttack) //Ï∂©ÎèåÌïúÍ≤å ÏûàÏúºÎ©¥
             {
                 StartCoroutine(Attack());
             }
@@ -114,7 +124,9 @@ public class Enemy : MonoBehaviour
         switch (enemyType)
         {
             case Type.A:
-                yield return new WaitForSeconds(0.3f);
+
+                yield return new WaitForSeconds(0.5f);
+                
                 MeleeArea.enabled = true;
 
                 yield return new WaitForSeconds(1.0f);
@@ -122,24 +134,26 @@ public class Enemy : MonoBehaviour
 
                 yield return new WaitForSeconds(1.0f);
                 break;
+
+
             case Type.B:
-                yield return new WaitForSeconds(0.1f);
-                rigid.AddForce(transform.forward * 20, ForceMode.Impulse);
+                yield return new WaitForSeconds(0.5f);
                 MeleeArea.enabled = true;
 
-                yield return new WaitForSeconds(0.5f);
-                rigid.velocity = Vector3.zero;
+                yield return new WaitForSeconds(0.7f);
                 MeleeArea.enabled = false;
 
-                yield return new WaitForSeconds(2f);
+                yield return new WaitForSeconds(1.0f);
                 break;
-            case Type.C:
-                yield return new WaitForSeconds(0.5f);
-                GameObject instantBullet = Instantiate(bullet, transform.position, transform.rotation);
-                Rigidbody rigidBullet = instantBullet.GetComponent<Rigidbody>();
-                rigidBullet.velocity = transform.forward * 20;
 
-                yield return new WaitForSeconds(2f);
+            case Type.C:
+                yield return new WaitForSeconds(0.7f);
+                MeleeArea.enabled = true;
+
+                yield return new WaitForSeconds(1.0f);
+                MeleeArea.enabled = false;
+
+                yield return new WaitForSeconds(1.5f);
                 break;
         }
         isChase = true;
@@ -173,7 +187,7 @@ public class Enemy : MonoBehaviour
             Weapon weapon = atk.matchWeaponGameObject.GetComponent<Weapon>();
             curHealth -= weapon.chargeDamage;
             if (curHealth <= 0) curHealth = 0;
-            Debug.Log("¿˚¿Ã ¬˜¬°∞¯∞›¿ª ∏¬æ“¥Ÿ!!");
+            Debug.Log("Ï†ÅÏù¥ Ï∞®ÏßïÍ≥µÍ≤©ÏùÑ ÎßûÏïòÎã§!!");
 
             Vector3 reactVec = transform.position - other.transform.position;
             StartCoroutine(OnDamage(reactVec, false));
@@ -182,7 +196,7 @@ public class Enemy : MonoBehaviour
 
     IEnumerator OnDamage(Vector3 reactVec, bool isGrenade)
     {
-        //∏ÛΩ∫≈Õ Ω√√ºø° ∂« √—¿ª ΩÓ∏È, ∏ÛΩ∫≈Õcount∞° ¡ŸæÓµÈ±Ê∑° √ﬂ∞°«ÿ∫Ω.
+        //Î™¨Ïä§ÌÑ∞ ÏãúÏ≤¥Ïóê Îòê Ï¥ùÏùÑ ÏèòÎ©¥, Î™¨Ïä§ÌÑ∞countÍ∞Ä Ï§ÑÏñ¥Îì§Í∏∏Îûò Ï∂îÍ∞ÄÌï¥Î¥Ñ.
         if (isDead)
             yield break;
 
@@ -210,7 +224,7 @@ public class Enemy : MonoBehaviour
             gameObject.layer = 14;
             isDead = true;
             isChase = false;
-            nav.enabled = false; //ªÁ∏¡∏Ææ◊º«¿ª ¿Ø¡ˆ«œ±‚ ¿ß«ÿ nav ≤˚
+            nav.enabled = false; //ÏÇ¨ÎßùÎ¶¨Ïï°ÏÖòÏùÑ Ïú†ÏßÄÌïòÍ∏∞ ÏúÑÌï¥ nav ÎÅî
             anim.SetTrigger("Dodie");
 
             Player player = Target.GetComponent<Player>();
@@ -223,12 +237,15 @@ public class Enemy : MonoBehaviour
                 case Type.A:
                     manager.enemyCntA--;
                     break;
+
                 case Type.B:
                     manager.enemyCntB--;
                     break;
+
                 case Type.C:
                     manager.enemyCntC--;
                     break;
+
                 case Type.D:
                     manager.enemyCntD--;
                     break;

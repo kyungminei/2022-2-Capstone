@@ -14,7 +14,6 @@ public class Player : MonoBehaviour
     public GameObject ChargeEffect;
 
     public AudioSource hammerSound;
-
     public int coin;
     public int health;
     public int score;
@@ -57,7 +56,7 @@ public class Player : MonoBehaviour
     MeshRenderer[] meshs;
 
     GameObject nearobject;
-    public Weapon equipWeapon; //ÀåÂøÁßÀÎ ¹«±â
+    public Weapon equipWeapon; //ì¥ì°©ì¤‘ì¸ ë¬´ê¸°
     int equipWeaponIndex= -1;
     float fireDelay;
 
@@ -111,7 +110,7 @@ public class Player : MonoBehaviour
             movevec = dodgevec;
         }
 
-        if( isDead) //!isFireReady»­
+        if( isDead) //!isFireReadyëºŒ
         {
             movevec = Vector3.zero;
         }
@@ -127,14 +126,14 @@ public class Player : MonoBehaviour
 
     void Turn()
     {
-        //Å°º¸µå È¸Àü
+        //í‚¤ë³´ë“œ íšŒì „
         transform.LookAt(transform.position + movevec);
 
-        //¸¶¿ì½º È¸Àü
+        //ë§ˆìš°ìŠ¤ íšŒì „
         if (fDown && !isDead)
         {
             Ray ray = followCamera.ScreenPointToRay(Input.mousePosition);
-            RaycastHit rayHit; //ray¿¡ ´êÀº ¿ÀºêÁ§Æ® Á¤º¸¸¦ ÀúÀåÇÏ´Â º¯¼ö
+            RaycastHit rayHit; //rayì— ë‹¿ì€ ì˜¤ë¸Œì íŠ¸ ì •ë³´ë¥¼ ì €ì¥í•˜ëŠ” ë³€ìˆ˜
             if (Physics.Raycast(ray, out rayHit, 100))
             {
                 Vector3 nextVec = rayHit.point - transform.position;
@@ -182,6 +181,7 @@ public class Player : MonoBehaviour
             {
                 Item item = nearobject.GetComponent<Item>();
                 int weaponIndex = item.value;
+
                 hasweapon = true;
 
                 Destroy(nearobject);
@@ -212,13 +212,13 @@ public class Player : MonoBehaviour
         {
             equipWeapon.MeleeAttack();
             animator.SetTrigger("Doswing");
-            if (equipWeapon.type == Weapon.Type.Melee) //¿Àµğ¿À Å×½ºÆ®
+            if (equipWeapon.type == Weapon.Type.Melee) //ì˜¤ë””ì˜¤ í…ŒìŠ¤íŠ¸
                 hammerSound.Play();
             fireDelay = 0;
         }
     }
-
-    void RecordFDownTime() //°ø°İ¹öÆ° ´©¸¥ ½Ã°£ ±â·Ï
+    
+    void RecordFDownTime() //ê³µê²©ë²„íŠ¼ ëˆ„ë¥¸ ì‹œê°„ ê¸°ë¡
     {
         if (fDown)
         {
@@ -290,7 +290,6 @@ public class Player : MonoBehaviour
                         health=maxhealth;
                     }
                     break;
-            }
             Destroy(other.gameObject);
         }
         else if(other.tag=="EnemyBullet")
@@ -313,6 +312,7 @@ public class Player : MonoBehaviour
     IEnumerator OnDamage(bool isBossAttack)
     {
         isDamaged = true;
+
         foreach(MeshRenderer mesh in meshs)
         {
             mesh.material.color = Color.yellow;
@@ -331,6 +331,7 @@ public class Player : MonoBehaviour
         yield return new WaitForSeconds(1f);
 
         isDamaged = false;
+
         foreach (MeshRenderer mesh in meshs)
         {
             mesh.material.color = Color.white;
@@ -361,13 +362,14 @@ public class Player : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
+
         //if(other.tag == "Weapon")
         //{
         //    nearobject = null;
         //}
-        //À§ ÄÚµå ¶§¹®¿¡, weapon Shop¿¡¼­ ¹«±â ±¸¸Å ÈÄ ¹«±â°¡ °¡±îÀÌ¿¡ ÀÖÀ¸¸é nullÃ³¸®µÇ¾î ¾Æ·¡¹®Àå¿¡ ¿¡·¯°¡ »ı±è.
-        //(nearobject°¡ nullÀÌ µÇ¾î¹ö·Á¼­ »óÁ¡¿¡¼­ ³ª¿ÍÁöÁö ¾ÊÀ½)
-        //À§ ÄÚµå°¡ ÇÊ¿äÇØÁú ½Ã, ÁÖ¼®À» ÇØÁ¦ÇÏ°í, weapon ShopÀÇ weapon spawn posÀ» ¸Ö¸® ¶³¾îÁø °÷À¸·Î ¿Å±â±â.
+        //ìœ„ ì½”ë“œ ë•Œë¬¸ì—, weapon Shopì—ì„œ ë¬´ê¸° êµ¬ë§¤ í›„ ë¬´ê¸°ê°€ ê°€ê¹Œì´ì— ìˆìœ¼ë©´ nullì²˜ë¦¬ë˜ì–´ ì•„ë˜ë¬¸ì¥ì— ì—ëŸ¬ê°€ ìƒê¹€.
+        //(nearobjectê°€ nullì´ ë˜ì–´ë²„ë ¤ì„œ ìƒì ì—ì„œ ë‚˜ì™€ì§€ì§€ ì•ŠìŒ)
+        //ìœ„ ì½”ë“œê°€ í•„ìš”í•´ì§ˆ ì‹œ, ì£¼ì„ì„ í•´ì œí•˜ê³ , weapon Shopì˜ weapon spawn posì„ ë©€ë¦¬ ë–¨ì–´ì§„ ê³³ìœ¼ë¡œ ì˜®ê¸°ê¸°.
         if (other.tag == "Shop")
         {
             Shop shop = nearobject.GetComponent<Shop>();
