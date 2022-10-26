@@ -12,8 +12,8 @@ public class Weapon : MonoBehaviour
     public float maxChargeTime;
 
 
-    public BoxCollider meleeArea; //ÀÏ¹İ°ø°İ
-    public BoxCollider ChargeMeleeArea;  //Â÷Áö°ø°İ
+    public BoxCollider meleeArea; //ì¼ë°˜ê³µê²©
+    public BoxCollider ChargeMeleeArea;  //ì°¨ì§€ê³µê²©
     public TrailRenderer meleeTrailEffect;
 
     public void MeleeAttack()
@@ -29,7 +29,7 @@ public class Weapon : MonoBehaviour
 
     IEnumerator Swing()
     {
-        yield return new WaitForSeconds(0.1f); // yield : °á°ú¸¦ ³½´Ù
+        yield return new WaitForSeconds(0.1f); // yield : ê²°ê³¼ë¥¼ ë‚¸ë‹¤
         meleeArea.enabled = true;
         meleeTrailEffect.enabled = true;
 
@@ -39,7 +39,7 @@ public class Weapon : MonoBehaviour
         yield return new WaitForSeconds(0.3f);
         meleeTrailEffect.enabled = false;
 
-        //yield break; //ÄÚ·çÆ¾ Å»Ãâ
+        //yield break; //ì½”ë£¨í‹´ íƒˆì¶œ
     }
 
     IEnumerator ChargeShot()
@@ -54,21 +54,21 @@ public class Weapon : MonoBehaviour
     }
     /*IEnumerator Shot()
     {
-        //1 ÃÑ¾Ë¹ß»ç
+        //1 ì´ì•Œë°œì‚¬
         GameObject instantBullet = Instantiate(bullet, bulletPos.position, bulletPos.rotation);
         Rigidbody bulletRigid = instantBullet.GetComponent<Rigidbody>();
         bulletRigid.velocity = bulletPos.forward * 50;
 
         yield return null;
 
-        //2 ÅºÇÇ ¹èÃâ
+        //2 íƒ„í”¼ ë°°ì¶œ
         GameObject instantBulletCase = Instantiate(bulletCase, bulletCasePos.position, bulletCasePos.rotation);
         Rigidbody bulletCaseRigid = instantBulletCase.GetComponent<Rigidbody>();
         Vector3 CaseVec = bulletCasePos.forward * Random.Range(-3, -2) + Vector3.up * Random.Range(2, 3);
         bulletCaseRigid.AddForce(CaseVec, ForceMode.Impulse);
-        bulletCaseRigid.AddTorque(Vector3.up * 10, ForceMode.Impulse); //ÅºÇÇ È¸Àü
+        bulletCaseRigid.AddTorque(Vector3.up * 10, ForceMode.Impulse); //íƒ„í”¼ íšŒì „
     }*/
 
-    //Use() ¸ŞÀÎ·çÆ¾ -> Swing() ¼­ºê·çÆ¾ -> Use() ¸ŞÀÎ·çÆ¾
-    //Use() ¸ŞÀÎ·çÆ¾ + Swing() ÄÚ·çÆ¾ (Co-op)
+    //Use() ë©”ì¸ë£¨í‹´ -> Swing() ì„œë¸Œë£¨í‹´ -> Use() ë©”ì¸ë£¨í‹´
+    //Use() ë©”ì¸ë£¨í‹´ + Swing() ì½”ë£¨í‹´ (Co-op)
 }

@@ -133,35 +133,73 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            for (int index = 0; index < stage; index++)
+            int monsterCount = 0;
+
+            for (int index = 0; index < (30 + stage * 5); index++)
             {
-                int ran = Random.Range(0, 3);
-                enemyList.Add(ran);
+                int ran = Random.Range(0, 11);
+                enemyList.Add(monsterCount);
 
                 switch (ran)
                 {
                     case 0:
                         enemyCntA++;
+                        monsterCount = 0;
                         break;
                     case 1:
-                        enemyCntB++;
+                        enemyCntA++;
+                        monsterCount = 0;
                         break;
                     case 2:
+                        enemyCntA++;
+                        monsterCount = 0;
+                        break;
+                    case 3:
+                        enemyCntA++;
+                        monsterCount = 0;
+                        break;
+                    case 4:
+                        enemyCntA++;
+                        monsterCount = 0;
+                        break;
+                    case 5:
+                        enemyCntA++;
+                        monsterCount = 0;
+                        break;
+                    case 6:
+                        enemyCntA++;
+                        monsterCount = 0;
+                        break;
+                    case 7:
+                        enemyCntA++;
+                        monsterCount = 0;
+                        break;
+                    case 8:
+                        enemyCntA++;
+                        monsterCount = 0;
+                        break;
+                    case 9:
+                        enemyCntB++;
+                        monsterCount = 1;
+                        break;
+                    case 10:
                         enemyCntC++;
+                        monsterCount = 2;
                         break;
                 }
             }
         }
 
-        while(enemyList.Count>0)
+        while(enemyList.Count > 0)
         {
-            int ran = Random.Range(0, 4);
+            int ran = Random.Range(0, 8);
             GameObject instantEnemy = Instantiate(enemies[enemyList[0]], enemyZone[ran].position, enemyZone[ran].rotation);
             Enemy enemy = instantEnemy.GetComponent<Enemy>();
             enemy.Target = player.transform;
             enemy.manager = this;
             enemyList.RemoveAt(0);
-            yield return new WaitForSeconds(4f); //EnumeratorÀÇ while¹® ¾È¿¡ yield returnÀ» Æ÷ÇÔ½ÃÅ°´Â °ÍÀÌ ÁÁ´Ù.
+            yield return new WaitForSeconds(0.4f); //Enumeratorì˜ whileë¬¸ ì•ˆì— yield returnì„ í¬í•¨ì‹œí‚¤ëŠ” ê²ƒì´ ì¢‹ë‹¤.
+
         }
 
         while(enemyCntA+enemyCntB+enemyCntC+enemyCntD>0)
@@ -185,7 +223,7 @@ public class GameManager : MonoBehaviour
 
     private void LateUpdate()
     {
-        //»ó´Ü UI
+        //ìƒë‹¨ UI
         scoreText.text= string.Format("{0:n0}", player.score);
         stageText.text = "STAGE " + stage;
 
@@ -195,9 +233,10 @@ public class GameManager : MonoBehaviour
 
         playtimeText.text = string.Format("{0:00}", hour) + ":" + string.Format("{0:00}", min) + ":" + string.Format("{0:00}", second);
 
-        //ÇÃ·¹ÀÌ¾î UI
+        //í”Œë ˆì´ì–´ UI
         playerHealth.text = player.health + "/" + player.maxhealth;
         playerCoin.text= string.Format("{0:n0}", player.coin);
+
         /*if (player.equipWeapon == null )
         {
             playerAmmo.text = "- / " + player.ammo;
@@ -211,16 +250,15 @@ public class GameManager : MonoBehaviour
             playerAmmo.text = player.equipWeapon.curAmmo + " / " + player.ammo;
         }*/
 
-        //¹«±â UI
+        //ë¬´ê¸° UI
         //weapon1Img.color = new Color(1, 1, 1, player.hasweapon ? 1 : 0);
 
-
-        //¸ó½ºÅÍ ¼ıÀÚUI
+        //ëª¬ìŠ¤í„° ìˆ«ìUI
         enemyAText.text = enemyCntA.ToString();
         enemyBText.text = enemyCntB.ToString();
         enemyCText.text = enemyCntC.ToString();
 
-        //º¸½º Ã¼·Â UI
+        //ë³´ìŠ¤ ì²´ë ¥ UI
         if(boss!=null)
         {
             bossHealthGroup.anchoredPosition = Vector3.down* 30;
