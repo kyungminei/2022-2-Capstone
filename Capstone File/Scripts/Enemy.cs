@@ -84,8 +84,6 @@ public class Enemy : MonoBehaviour
                     targetRadius = 1.5f;
                     targetRange = 3f;
                     break;
-
-
                 case Type.B:
                     targetRadius = 1.0f;
                     targetRange = 3f;
@@ -94,13 +92,6 @@ public class Enemy : MonoBehaviour
                 case Type.C:
                     targetRadius = 3.0f;
                     targetRange = 3f;
-                case Type.B:
-                    targetRadius = 1f;
-                    targetRange = 10f;
-                    break;
-                case Type.C:
-                    targetRadius = 0.5f;
-                    targetRange = 25f;
                     break;
             }
             RaycastHit[] rayHits =
@@ -152,7 +143,7 @@ public class Enemy : MonoBehaviour
 
                 yield return new WaitForSeconds(1.0f);
                 MeleeArea.enabled = false;
-
+                
                 yield return new WaitForSeconds(1.5f);
                 break;
         }
@@ -196,10 +187,6 @@ public class Enemy : MonoBehaviour
 
     IEnumerator OnDamage(Vector3 reactVec, bool isGrenade)
     {
-        //몬스터 시체에 또 총을 쏘면, 몬스터count가 줄어들길래 추가해봄.
-        if (isDead)
-            yield break;
-
         foreach(MeshRenderer mesh in mat)
         {
             mesh.material.color = Color.red;
@@ -216,13 +203,18 @@ public class Enemy : MonoBehaviour
         }
         else
         {
+            //몬스터 시체에 또 총을 쏘면, 몬스터count가 줄어들길래 추가해봄.
+            if (isDead)
+            {
+                yield break;
+            }
+
             foreach (MeshRenderer mesh in mat)
             {
                 mesh.material.color = Color.gray;
             }
 
             gameObject.layer = 14;
-            isDead = true;
             isChase = false;
             nav.enabled = false; //사망리액션을 유지하기 위해 nav 끔
             anim.SetTrigger("Dodie");
@@ -267,7 +259,7 @@ public class Enemy : MonoBehaviour
                 rigid.AddForce(reactVec * 5, ForceMode.Impulse);
             }
              Destroy(gameObject, 4);
-            
+             isDead = true;
         }
     }
 }

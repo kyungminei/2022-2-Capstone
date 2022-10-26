@@ -14,6 +14,8 @@ public class Player : MonoBehaviour
     public GameObject ChargeEffect;
 
     public AudioSource hammerSound;
+    public AudioSource ChargeSound;
+    
     public int coin;
     public int health;
     public int score;
@@ -47,9 +49,11 @@ public class Player : MonoBehaviour
     bool isDead;
     bool isClicked;
     bool isCharge;
+    bool isAttackTurn; // 공격에 의한 회전을 하는 중인지 아닌지.
 
     Vector3 movevec;
     Vector3 dodgevec;
+    Vector3 mousevec;
 
     Animator animator;
     Rigidbody rigid;
@@ -126,22 +130,26 @@ public class Player : MonoBehaviour
 
     void Turn()
     {
-        //키보드 회전
-        transform.LookAt(transform.position + movevec);
-
-        //마우스 회전
-        if (fDown && !isDead)
+        if(!isAttackTurn)
         {
-            Ray ray = followCamera.ScreenPointToRay(Input.mousePosition);
-            RaycastHit rayHit; //ray에 닿은 오브젝트 정보를 저장하는 변수
-            if (Physics.Raycast(ray, out rayHit, 100))
+            //키보드 회전
+            transform.LookAt(transform.position + movevec);
+
+            //마우스 회전
+            if (fDown && !isDead)
             {
-                Vector3 nextVec = rayHit.point - transform.position;
-                nextVec.y = 0;
-                transform.LookAt(transform.position + nextVec);
+                Ray ray = followCamera.ScreenPointToRay(Input.mousePosition);
+                RaycastHit rayHit; //ray에 닿은 오브젝트 정보를 저장하는 변수
+                if (Physics.Raycast(ray, out rayHit, 100))
+                {
+                    Vector3 nextVec = rayHit.point - transform.position;
+                    nextVec.y = 0;
+                    transform.LookAt(transform.position + nextVec);
+                }
             }
         }
     }
+
 
     void Jump()
     {
@@ -204,20 +212,49 @@ public class Player : MonoBehaviour
 
         if (isCharge && isFireReady && !isDodge && !isShop && !isDead && !isClicked)
         {
+            StartCoroutine("SeeToMousePos");
+
             equipWeapon.ChargeAttack();
+            animator.SetTrigger("Doswing");
+
+            ChargeSound.Play();
             fireDelay = 0;
             isCharge = false;
         }
         else if (fUp && isFireReady && !isDodge && !isShop && !isDead && !isCharge)
         {
+            StopCoroutine("SeeToMousePos");
+            StartCoroutine("SeeToMousePos");
+
             equipWeapon.MeleeAttack();
             animator.SetTrigger("Doswing");
-            if (equipWeapon.type == Weapon.Type.Melee) //오디오 테스트
-                hammerSound.Play();
+            hammerSound.Play();
             fireDelay = 0;
         }
     }
-    
+
+    void SaveMousePos()
+    {    
+        Ray ray = followCamera.ScreenPointToRay(Input.mousePosition);
+        RaycastHit rayHit; //ray에 닿은 오브젝트 정보를 저장하는 변수
+        if (Physics.Raycast(ray, out rayHit, 100))
+        {
+            mousevec = rayHit.point; //마우스 누른 위치 저장
+        }    
+    }
+
+    IEnumerator SeeToMousePos()
+    {
+        Vector3 tomouse = mousevec - transform.position;
+        tomouse.y = 0;
+        transform.LookAt(transform.position+tomouse);
+
+        isAttackTurn = true;
+        yield return new WaitForSeconds(0.5f);
+
+        isAttackTurn = false;
+    }
+   
     void RecordFDownTime() //공격버튼 누른 시간 기록
     {
         if (fDown)
@@ -233,9 +270,9 @@ public class Player : MonoBehaviour
 
         if (isClicked)
         {
+            SaveMousePos();
             ChargeEffect.SetActive(true);
             curChargeTime += Time.deltaTime;
-            Debug.Log(curChargeTime);
 
             if (curChargeTime >= equipWeapon.maxChargeTime)
             {
@@ -271,10 +308,10 @@ public class Player : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if(other.tag=="Item")
+        if (other.tag == "Item")
         {
             Item item = other.GetComponent<Item>();
-            switch(item.type)
+            switch (item.type)
             {
                 case Item.Type.Coin:
                     coin += item.value;
@@ -287,14 +324,14 @@ public class Player : MonoBehaviour
                     health += item.value;
                     if (health > maxhealth)
                     {
-                        health=maxhealth;
+                        health = maxhealth;
                     }
                     break;
             Destroy(other.gameObject);
         }
-        else if(other.tag=="EnemyBullet")
+        else if (other.tag == "EnemyBullet")
         {
-            if(!isDamaged)
+            if (!isDamaged)
             {
                 Bullet enemyBullet = other.GetComponent<Bullet>();
                 health -= enemyBullet.damage;
