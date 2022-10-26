@@ -7,29 +7,33 @@ using UnityEngine.AI;
 public class Player : MonoBehaviour
 {
     public float speed;
-    public GameObject weapon;
+    public GameObject[] weapons;
+    public GameObject[] grenades;
     public Camera followCamera;
-    public bool hasweapon;
+    public bool[] hasweapons;
+    public int hasGrenades;
+    public GameObject grenadeObj;
     public GameManager manager;
-    public GameObject ChargeEffect;
 
     public AudioSource hammerSound;
+
+    public int ammo;
     public int coin;
     public int health;
     public int score;
 
+    public int maxammo;
     public int maxcoin;
     public int maxhealth;
+    public int maxhasGrenades;
+
 
     float hAxis;
     float vAxis;
 
-    float curChargeTime=0;
-
     bool iDown; //weapon
     bool wDown;
     bool fDown;
-    bool fUp;
     bool gDown;
     bool rDown;
     bool jDown;
@@ -40,13 +44,13 @@ public class Player : MonoBehaviour
 
     bool isJump;
     bool isDodge;
+    bool isSwap;
+    bool isReload;
     bool isFireReady = true;
     bool isBorder;
     bool isDamaged;
     bool isShop;
     bool isDead;
-    bool isClicked;
-    bool isCharge;
 
     Vector3 movevec;
     Vector3 dodgevec;
@@ -81,10 +85,12 @@ public class Player : MonoBehaviour
         Move();
         Turn();
         Jump();
-        RecordFDownTime();
         Attack();
+        Grenade();
+        Reload();
         Dodge();
         interation();
+        Swap();
     }
 
     void GetInput()
@@ -93,8 +99,9 @@ public class Player : MonoBehaviour
         vAxis = Input.GetAxisRaw("Vertical");
         wDown = Input.GetButton("Walk");
         jDown = Input.GetButtonDown("Jump");
-        fDown = Input.GetButtonDown("Fire1");
-        fUp = Input.GetButtonUp("Fire1");
+        fDown = Input.GetButton("Fire1");
+        gDown = Input.GetButton("Fire2");
+        rDown = Input.GetButtonDown("Reload");
         iDown = Input.GetButtonDown("interation");
         sDown1 = Input.GetButtonDown("swap1");
         sDown2 = Input.GetButtonDown("swap2");
@@ -110,7 +117,7 @@ public class Player : MonoBehaviour
             movevec = dodgevec;
         }
 
-        if( isDead) //!isFireReady뺌
+        if(isSwap || !isFireReady || isReload || isDead)
         {
             movevec = Vector3.zero;
         }
@@ -145,7 +152,7 @@ public class Player : MonoBehaviour
 
     void Jump()
     {
-        if(jDown && movevec==Vector3.zero && !isJump && !isDodge && !isDead)
+        if(jDown && movevec==Vector3.zero && !isJump && !isDodge &&!isSwap && !isDead)
         {
             GetComponent<Rigidbody>().AddForce(Vector3.up * 20, ForceMode.Impulse);
             animator.SetBool("Isjump", true);
@@ -156,7 +163,7 @@ public class Player : MonoBehaviour
 
     void Dodge()
     {
-        if (jDown && movevec != Vector3.zero && !isJump && !isDodge && !isDead ) 
+        if (jDown && movevec != Vector3.zero && !isJump && !isDodge && !isSwap && !isDead ) 
         {
             dodgevec = movevec; 
             animator.SetTrigger("Dododge");
@@ -181,8 +188,7 @@ public class Player : MonoBehaviour
             {
                 Item item = nearobject.GetComponent<Item>();
                 int weaponIndex = item.value;
-
-                hasweapon = true;
+                hasweapons[weaponIndex] = true;
 
                 Destroy(nearobject);
             }
@@ -195,6 +201,41 @@ public class Player : MonoBehaviour
         }
     }
 
+    void Swap()
+    {
+        if (sDown1 && (!hasweapons[0] || equipWeaponIndex == 0)) return; //획득하지 않은 무기거나, 이미 들고있는 무기면 return
+        if (sDown2 && (!hasweapons[1] || equipWeaponIndex == 1)) return;
+        if (sDown3 && (!hasweapons[2] || equipWeaponIndex == 2)) return;
+
+
+        int weaponIndex = -1;
+        if (sDown1) weaponIndex = 0;
+        if (sDown2) weaponIndex = 1;
+        if (sDown3) weaponIndex = 2;
+
+        if((sDown1 || sDown2 || sDown3) && !isJump && !isDodge && !isDead)
+        {
+            if(equipWeapon!=null)
+            {
+                equipWeapon.gameObject.SetActive(false);
+            }
+            equipWeaponIndex = weaponIndex;
+            equipWeapon = weapons[weaponIndex].GetComponent<Weapon>();
+            equipWeapon.gameObject.SetActive(true);
+
+            animator.SetTrigger("Doswap");
+
+            isSwap = true;
+
+            Invoke("SwapOut", 0.4f);
+        }
+    }
+
+    void SwapOut()
+    {
+        isSwap = false;
+    }
+
     void Attack()
     {
         if (equipWeapon == null) return;
@@ -202,44 +243,61 @@ public class Player : MonoBehaviour
         fireDelay += Time.deltaTime;
         isFireReady = equipWeapon.rate < fireDelay;
 
-        if (isCharge && isFireReady && !isDodge && !isShop && !isDead && !isClicked)
+        if (fDown && isFireReady && !isDodge && !isSwap && !isShop && !isDead)
         {
-            equipWeapon.ChargeAttack();
-            fireDelay = 0;
-            isCharge = false;
-        }
-        else if (fUp && isFireReady && !isDodge && !isShop && !isDead && !isCharge)
-        {
-            equipWeapon.MeleeAttack();
-            animator.SetTrigger("Doswing");
+            equipWeapon.Use();
+            animator.SetTrigger(equipWeapon.type==Weapon.Type.Melee ? "Doswing" : "Doshot");
             if (equipWeapon.type == Weapon.Type.Melee) //오디오 테스트
                 hammerSound.Play();
             fireDelay = 0;
         }
     }
-    
-    void RecordFDownTime() //공격버튼 누른 시간 기록
+
+    void Reload()
     {
-        if (fDown)
-        {
-            isClicked = true;
-        }
-        if (fUp)
-        {   
-            ChargeEffect.SetActive(false);
-            isClicked = false;
-            curChargeTime = 0;
-        }
+        if (equipWeapon == null) return;
 
-        if (isClicked)
-        {
-            ChargeEffect.SetActive(true);
-            curChargeTime += Time.deltaTime;
-            Debug.Log(curChargeTime);
+        if (equipWeapon.type == Weapon.Type.Melee) return;
 
-            if (curChargeTime >= equipWeapon.maxChargeTime)
+        if (ammo == 0) return;
+
+        if(rDown && !isJump && !isDodge && !isSwap && isFireReady && !isShop && !isDead)
+        {
+            animator.SetTrigger("Doreload");
+            isReload = true;
+
+            Invoke("ReloadOut", 1.0f);
+        }
+    }
+
+    void ReloadOut()
+    {
+        int reAmmo = ammo < equipWeapon.maxAmmo ? ammo : equipWeapon.maxAmmo; //maxAmmo:40, ammo:10일 때, ammo만큼 장전되어야함.
+        equipWeapon.curAmmo = reAmmo;
+        ammo -= reAmmo; //장전한 만큼 빼주기
+        isReload = false;
+    }
+
+    void Grenade()
+    {
+        if (hasGrenades == 0) return;
+
+        if(gDown &&  !isReload && !isSwap && !isShop && !isDead)
+        {
+            Ray ray = followCamera.ScreenPointToRay(Input.mousePosition);
+            RaycastHit rayHit; //ray에 닿은 정보를 저장하는 변수
+            if (Physics.Raycast(ray, out rayHit, 100))
             {
-                isCharge = true;
+                Vector3 nextVec = rayHit.point - transform.position;
+                nextVec.y = 10;
+
+                GameObject instantGrenade = Instantiate(grenadeObj, transform.position, transform.rotation);
+                Rigidbody rigidGrenade = instantGrenade.GetComponent<Rigidbody>();
+                rigidGrenade.AddForce(nextVec, ForceMode.Impulse);
+                rigidGrenade.AddTorque(Vector3.back * 10, ForceMode.Impulse);
+
+                hasGrenades--;
+                grenades[hasGrenades].SetActive(false);
             }
         }
     }
@@ -276,6 +334,13 @@ public class Player : MonoBehaviour
             Item item = other.GetComponent<Item>();
             switch(item.type)
             {
+                case Item.Type.Ammo:
+                    ammo += item.value;
+                    if( ammo >maxammo)
+                    {
+                        ammo = maxammo;
+                    }
+                    break;
                 case Item.Type.Coin:
                     coin += item.value;
                     if (coin > maxcoin)
@@ -290,6 +355,15 @@ public class Player : MonoBehaviour
                         health=maxhealth;
                     }
                     break;
+                case Item.Type.Grenade:
+                    grenades[hasGrenades].SetActive(true);
+                    hasGrenades += item.value;
+                    if (hasGrenades > maxhasGrenades)
+                    {
+                        hasGrenades = maxhasGrenades;
+                    }
+                    break;
+            }
             Destroy(other.gameObject);
         }
         else if(other.tag=="EnemyBullet")
@@ -312,7 +386,6 @@ public class Player : MonoBehaviour
     IEnumerator OnDamage(bool isBossAttack)
     {
         isDamaged = true;
-
         foreach(MeshRenderer mesh in meshs)
         {
             mesh.material.color = Color.yellow;
@@ -331,7 +404,6 @@ public class Player : MonoBehaviour
         yield return new WaitForSeconds(1f);
 
         isDamaged = false;
-
         foreach (MeshRenderer mesh in meshs)
         {
             mesh.material.color = Color.white;
@@ -362,15 +434,11 @@ public class Player : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
-
-        //if(other.tag == "Weapon")
-        //{
-        //    nearobject = null;
-        //}
-        //위 코드 때문에, weapon Shop에서 무기 구매 후 무기가 가까이에 있으면 null처리되어 아래문장에 에러가 생김.
-        //(nearobject가 null이 되어버려서 상점에서 나와지지 않음)
-        //위 코드가 필요해질 시, 주석을 해제하고, weapon Shop의 weapon spawn pos을 멀리 떨어진 곳으로 옮기기.
-        if (other.tag == "Shop")
+        if(other.tag == "Weapon")
+        {
+            nearobject = null;
+        }
+        else if (other.tag == "Shop")
         {
             Shop shop = nearobject.GetComponent<Shop>();
             shop.Exit();

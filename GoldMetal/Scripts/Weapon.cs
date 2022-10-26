@@ -4,55 +4,52 @@ using UnityEngine;
 
 public class Weapon : MonoBehaviour
 {
-    public enum Type { Melee, ChargeMelee};
+    public enum Type { Melee, Range};
     public Type type;
-    public int meleeDamage;
-    public int chargeDamage;
+    public int damage;
     public float rate;
-    public float maxChargeTime;
+    public int maxAmmo;
+    public int curAmmo;
 
 
-    public BoxCollider meleeArea; //일반공격
-    public BoxCollider ChargeMeleeArea;  //차지공격
-    public TrailRenderer meleeTrailEffect;
+    public BoxCollider meleeArea;
+    public TrailRenderer trailEffect;
+    public Transform bulletPos;
+    public GameObject bullet;
+    public Transform bulletCasePos;
+    public GameObject bulletCase;
 
-    public void MeleeAttack()
+
+    public void Use()
     {
-        StopCoroutine("Swing");
-        StartCoroutine("Swing");
+        if (type == Type.Melee)
+        {
+            StopCoroutine("Swing");
+            StartCoroutine("Swing");
+        }
+        else if (type == Type.Range && curAmmo > 0)
+        {
+            curAmmo--;
+            StartCoroutine("Shot");
+        }
     }
-
-    public void ChargeAttack()
-    {
-        StartCoroutine("ChargeShot");
-    }
-
     IEnumerator Swing()
     {
+
         yield return new WaitForSeconds(0.1f); // yield : 결과를 낸다
         meleeArea.enabled = true;
-        meleeTrailEffect.enabled = true;
+        trailEffect.enabled = true;
 
         yield return new WaitForSeconds(0.4f);
+
         meleeArea.enabled = false;
 
         yield return new WaitForSeconds(0.3f);
-        meleeTrailEffect.enabled = false;
+        trailEffect.enabled = false;
 
         //yield break; //코루틴 탈출
     }
-
-    IEnumerator ChargeShot()
-    {
-        ChargeMeleeArea.enabled = true;
-
-        yield return new WaitForSeconds(0.4f);
-        ChargeMeleeArea.enabled = false;
-
-
-        yield return null;
-    }
-    /*IEnumerator Shot()
+    IEnumerator Shot()
     {
         //1 총알발사
         GameObject instantBullet = Instantiate(bullet, bulletPos.position, bulletPos.rotation);
@@ -67,7 +64,7 @@ public class Weapon : MonoBehaviour
         Vector3 CaseVec = bulletCasePos.forward * Random.Range(-3, -2) + Vector3.up * Random.Range(2, 3);
         bulletCaseRigid.AddForce(CaseVec, ForceMode.Impulse);
         bulletCaseRigid.AddTorque(Vector3.up * 10, ForceMode.Impulse); //탄피 회전
-    }*/
+    }
 
     //Use() 메인루틴 -> Swing() 서브루틴 -> Use() 메인루틴
     //Use() 메인루틴 + Swing() 코루틴 (Co-op)

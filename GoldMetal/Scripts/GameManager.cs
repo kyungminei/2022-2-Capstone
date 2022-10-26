@@ -37,8 +37,12 @@ public class GameManager : MonoBehaviour
     public Text stageText;
     public Text playtimeText;
     public Text playerHealth;
+    public Text playerAmmo;
     public Text playerCoin;
     public Image weapon1Img;
+    public Image weapon2Img;
+    public Image weapon3Img;
+    public Image weaponRImg;
     public Text enemyAText;
     public Text enemyBText;
     public Text enemyCText;
@@ -133,73 +137,35 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            int monsterCount = 0;
-
-            for (int index = 0; index < (30 + stage * 5); index++)
+            for (int index = 0; index < stage; index++)
             {
-                int ran = Random.Range(0, 11);
-                enemyList.Add(monsterCount);
+                int ran = Random.Range(0, 3);
+                enemyList.Add(ran);
 
                 switch (ran)
                 {
                     case 0:
                         enemyCntA++;
-                        monsterCount = 0;
                         break;
                     case 1:
-                        enemyCntA++;
-                        monsterCount = 0;
+                        enemyCntB++;
                         break;
                     case 2:
-                        enemyCntA++;
-                        monsterCount = 0;
-                        break;
-                    case 3:
-                        enemyCntA++;
-                        monsterCount = 0;
-                        break;
-                    case 4:
-                        enemyCntA++;
-                        monsterCount = 0;
-                        break;
-                    case 5:
-                        enemyCntA++;
-                        monsterCount = 0;
-                        break;
-                    case 6:
-                        enemyCntA++;
-                        monsterCount = 0;
-                        break;
-                    case 7:
-                        enemyCntA++;
-                        monsterCount = 0;
-                        break;
-                    case 8:
-                        enemyCntA++;
-                        monsterCount = 0;
-                        break;
-                    case 9:
-                        enemyCntB++;
-                        monsterCount = 1;
-                        break;
-                    case 10:
                         enemyCntC++;
-                        monsterCount = 2;
                         break;
                 }
             }
         }
 
-        while(enemyList.Count > 0)
+        while(enemyList.Count>0)
         {
-            int ran = Random.Range(0, 8);
+            int ran = Random.Range(0, 4);
             GameObject instantEnemy = Instantiate(enemies[enemyList[0]], enemyZone[ran].position, enemyZone[ran].rotation);
             Enemy enemy = instantEnemy.GetComponent<Enemy>();
             enemy.Target = player.transform;
             enemy.manager = this;
             enemyList.RemoveAt(0);
-            yield return new WaitForSeconds(0.4f); //Enumeratorì˜ whileë¬¸ ì•ˆì— yield returnì„ í¬í•¨ì‹œí‚¤ëŠ” ê²ƒì´ ì¢‹ë‹¤.
-
+            yield return new WaitForSeconds(4f); //EnumeratorÀÇ while¹® ¾È¿¡ yield returnÀ» Æ÷ÇÔ½ÃÅ°´Â °ÍÀÌ ÁÁ´Ù.
         }
 
         while(enemyCntA+enemyCntB+enemyCntC+enemyCntD>0)
@@ -223,7 +189,7 @@ public class GameManager : MonoBehaviour
 
     private void LateUpdate()
     {
-        //ìƒë‹¨ UI
+        //»ó´Ü UI
         scoreText.text= string.Format("{0:n0}", player.score);
         stageText.text = "STAGE " + stage;
 
@@ -233,11 +199,10 @@ public class GameManager : MonoBehaviour
 
         playtimeText.text = string.Format("{0:00}", hour) + ":" + string.Format("{0:00}", min) + ":" + string.Format("{0:00}", second);
 
-        //í”Œë ˆì´ì–´ UI
+        //ÇÃ·¹ÀÌ¾î UI
         playerHealth.text = player.health + "/" + player.maxhealth;
         playerCoin.text= string.Format("{0:n0}", player.coin);
-
-        /*if (player.equipWeapon == null )
+        if (player.equipWeapon == null )
         {
             playerAmmo.text = "- / " + player.ammo;
         }
@@ -248,17 +213,20 @@ public class GameManager : MonoBehaviour
         else
         {
             playerAmmo.text = player.equipWeapon.curAmmo + " / " + player.ammo;
-        }*/
+        }
 
-        //ë¬´ê¸° UI
-        //weapon1Img.color = new Color(1, 1, 1, player.hasweapon ? 1 : 0);
+        //¹«±â UI
+        weapon1Img.color = new Color(1, 1, 1, player.hasweapons[0] ? 1 : 0);
+        weapon2Img.color = new Color(1, 1, 1, player.hasweapons[1] ? 1 : 0);
+        weapon3Img.color = new Color(1, 1, 1, player.hasweapons[2] ? 1 : 0);
+        weaponRImg.color = new Color(1, 1, 1, player.hasGrenades>0 ? 1 : 0);
 
-        //ëª¬ìŠ¤í„° ìˆ«ìUI
+        //¸ó½ºÅÍ ¼ıÀÚUI
         enemyAText.text = enemyCntA.ToString();
         enemyBText.text = enemyCntB.ToString();
         enemyCText.text = enemyCntC.ToString();
 
-        //ë³´ìŠ¤ ì²´ë ¥ UI
+        //º¸½º Ã¼·Â UI
         if(boss!=null)
         {
             bossHealthGroup.anchoredPosition = Vector3.down* 30;
