@@ -15,7 +15,7 @@ public class Player : MonoBehaviour
 
     public AudioSource hammerSound;
     public AudioSource ChargeSound;
-
+    
     public int coin;
     public int health;
     public int score;
@@ -228,7 +228,6 @@ public class Player : MonoBehaviour
 
             equipWeapon.MeleeAttack();
             animator.SetTrigger("Doswing");
-
             hammerSound.Play();
             fireDelay = 0;
         }
@@ -328,7 +327,6 @@ public class Player : MonoBehaviour
                         health = maxhealth;
                     }
                     break;
-            }
             Destroy(other.gameObject);
         }
         else if (other.tag == "EnemyBullet")

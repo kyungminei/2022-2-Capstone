@@ -84,8 +84,6 @@ public class Enemy : MonoBehaviour
                     targetRadius = 1.5f;
                     targetRange = 3f;
                     break;
-
-
                 case Type.B:
                     targetRadius = 1.0f;
                     targetRange = 3f;
@@ -145,7 +143,7 @@ public class Enemy : MonoBehaviour
 
                 yield return new WaitForSeconds(1.0f);
                 MeleeArea.enabled = false;
-
+                
                 yield return new WaitForSeconds(1.5f);
                 break;
         }
@@ -189,7 +187,6 @@ public class Enemy : MonoBehaviour
 
     IEnumerator OnDamage(Vector3 reactVec, bool isGrenade)
     {
-
         foreach(MeshRenderer mesh in mat)
         {
             mesh.material.color = Color.red;
