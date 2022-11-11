@@ -18,7 +18,7 @@ public class Boss : Enemy
     {
         rigid = GetComponent<Rigidbody>();
         boxCollider = GetComponent<BoxCollider>();
-        mat = GetComponentsInChildren<MeshRenderer>();
+        //mat = GetComponentsInChildren<MeshRenderer>(); ¼öÁ¤ ÇÊ
         nav = GetComponent<NavMeshAgent>();
         anim = GetComponentInChildren<Animator>();
 

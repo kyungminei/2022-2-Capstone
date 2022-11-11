@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.AI;
+using static UnityEngine.GraphicsBuffer;
 
 public class Player : MonoBehaviour
 {
@@ -12,10 +13,11 @@ public class Player : MonoBehaviour
     public bool hasweapon;
     public GameManager manager;
     public GameObject ChargeEffect;
+    public GameObject arrow;
 
     public AudioSource hammerSound;
     public AudioSource ChargeSound;
-    
+
     public int coin;
     public int health;
     public int score;
@@ -84,6 +86,7 @@ public class Player : MonoBehaviour
         GetInput();
         Move();
         Turn();
+        arrowTurn();
         Jump();
         RecordFDownTime();
         Attack();
@@ -147,6 +150,20 @@ public class Player : MonoBehaviour
                     transform.LookAt(transform.position + nextVec);
                 }
             }
+        }
+    }
+
+    void arrowTurn()
+    {
+        Ray cameraRay = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Plane GroupPlane = new Plane(Vector3.up, Vector3.zero);
+
+        float rayLength;
+
+        if (GroupPlane.Raycast(cameraRay, out rayLength))
+        {
+            Vector3 pointTolook = cameraRay.GetPoint(rayLength);
+            arrow.transform.LookAt(new Vector3(pointTolook.x, transform.position.y, pointTolook.z));
         }
     }
 
@@ -228,6 +245,7 @@ public class Player : MonoBehaviour
 
             equipWeapon.MeleeAttack();
             animator.SetTrigger("Doswing");
+
             hammerSound.Play();
             fireDelay = 0;
         }
@@ -327,6 +345,7 @@ public class Player : MonoBehaviour
                         health = maxhealth;
                     }
                     break;
+            }
             Destroy(other.gameObject);
         }
         else if (other.tag == "EnemyBullet")

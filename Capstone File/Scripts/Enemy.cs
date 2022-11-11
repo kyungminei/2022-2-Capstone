@@ -22,7 +22,10 @@ public class Enemy : MonoBehaviour
 
     public Rigidbody rigid;
     public BoxCollider boxCollider;
-    public MeshRenderer[] mat;
+    //public MeshRenderer[] mat;
+    public SkinnedMeshRenderer skMat;
+    public Color firstColor; //원래 색상 저장.
+
     public NavMeshAgent nav;
     public Animator anim;
 
@@ -30,9 +33,12 @@ public class Enemy : MonoBehaviour
     {
         rigid = GetComponent<Rigidbody>();
         boxCollider = GetComponent<BoxCollider>();
-        mat = GetComponentsInChildren<MeshRenderer>();
+        //mat = GetComponentsInChildren<MeshRenderer>();
+        skMat = GetComponentInChildren<SkinnedMeshRenderer>();
         nav = GetComponent<NavMeshAgent>();
         anim = GetComponentInChildren<Animator>();
+
+        firstColor = skMat.materials[0].color;
 
         if (enemyType!=Type.D)
         {
@@ -84,6 +90,8 @@ public class Enemy : MonoBehaviour
                     targetRadius = 1.5f;
                     targetRange = 3f;
                     break;
+
+
                 case Type.B:
                     targetRadius = 1.0f;
                     targetRange = 3f;
@@ -143,7 +151,7 @@ public class Enemy : MonoBehaviour
 
                 yield return new WaitForSeconds(1.0f);
                 MeleeArea.enabled = false;
-                
+
                 yield return new WaitForSeconds(1.5f);
                 break;
         }
@@ -164,7 +172,6 @@ public class Enemy : MonoBehaviour
         {
             AttackAreaWeaponInfo atk = other.GetComponent<AttackAreaWeaponInfo>();
             Weapon weapon = atk.matchWeaponGameObject.GetComponent<Weapon>();
-            //Weapon weapon = other.GetComponent<Weapon>(); 
             curHealth -= weapon.meleeDamage;
             if (curHealth <= 0) curHealth = 0;
 
@@ -187,19 +194,23 @@ public class Enemy : MonoBehaviour
 
     IEnumerator OnDamage(Vector3 reactVec, bool isGrenade)
     {
-        foreach(MeshRenderer mesh in mat)
+        skMat.materials[0].color = Color.red;
+
+        /*foreach(MeshRenderer mesh in mat)
         {
             mesh.material.color = Color.red;
-        }
+        } */
 
         yield return new WaitForSeconds(0.1f);
 
         if(curHealth>0)
         {
-            foreach (MeshRenderer mesh in mat)
+            skMat.materials[0].color = firstColor;
+
+            /*foreach (MeshRenderer mesh in mat)
             {
                 mesh.material.color = Color.white;
-            }
+            }*/
         }
         else
         {
@@ -209,15 +220,18 @@ public class Enemy : MonoBehaviour
                 yield break;
             }
 
-            foreach (MeshRenderer mesh in mat)
+            skMat.materials[0].color = Color.gray;
+            /*foreach (MeshRenderer mesh in mat)
             {
                 mesh.material.color = Color.gray;
-            }
+            }*/
 
             gameObject.layer = 14;
             isChase = false;
             nav.enabled = false; //사망리액션을 유지하기 위해 nav 끔
             anim.SetTrigger("Dodie");
+
+            //죽는 애니메이션 시, 애니메이션에 의해 오브젝트 높이가 변경되고 있음.
 
             Player player = Target.GetComponent<Player>();
             player.score += score;
