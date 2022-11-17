@@ -21,12 +21,22 @@ public class GameManager : MonoBehaviour
     public int enemyCntB;
     public int enemyCntC;
     public int enemyCntD;
+    public GameObject[] sp_Grounds; //봄 ground
+    public GameObject[] su_Grounds; //여름 ground
+    public GameObject[] fa_Grounds; //가을 ground
+    public GameObject[] wi_Grounds; //겨울 ground
+    public GameObject curGround;
+
+    public enum stageType { spring, summer, fall, winter};
+    public stageType StageType;
 
 
     public Transform[] enemyZone;
     public GameObject[] enemies;
     public List<int> enemyList;
 
+    public GameObject seasonPanel;
+    public GameObject[] stagePanels;
     public GameObject menuPanel;
     public GameObject gamePanel;
     public GameObject overPanel;
@@ -58,12 +68,53 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void SetGround(int stage_num, stageType stage_Type)
+    {
+        stage = stage_num;
+        StageType = stage_Type;
+
+        if (stage == 0) return;
+
+        switch(StageType)
+        {
+            case stageType.spring:
+                sp_Grounds[stage - 1].SetActive(true);
+                curGround.SetActive(false);
+                curGround = sp_Grounds[stage - 1];
+                break;
+
+            case stageType.summer:
+                su_Grounds[stage - 1].SetActive(true);
+                curGround.SetActive(false);
+                curGround = su_Grounds[stage - 1];
+                break;
+
+            case stageType.fall:
+                fa_Grounds[stage - 1].SetActive(true);
+                curGround.SetActive(false);
+                curGround = fa_Grounds[stage - 1];
+                break;
+
+            case stageType.winter:
+                wi_Grounds[stage - 1].SetActive(true);
+                curGround.SetActive(false);
+                curGround = wi_Grounds[stage - 1];
+                break;
+        }
+
+        GameStart();
+    }
+
     public void GameStart()
     {
         MenuCamera.SetActive(false);
         GameCamera.SetActive(true);
 
-        menuPanel.SetActive(false);
+        //menuPanel.SetActive(false);
+        foreach(var pan in stagePanels)
+        {
+            pan.SetActive(false);
+        }
         gamePanel.SetActive(true);
 
         player.gameObject.SetActive(true);
@@ -81,6 +132,12 @@ public class GameManager : MonoBehaviour
             bestScoreText.gameObject.SetActive(true);
             PlayerPrefs.GetInt("MaxScore", player.score);
         }
+    }
+
+    public void OnSeasonPanel()
+    {
+        menuPanel.SetActive(false);
+        seasonPanel.SetActive(true);
     }
 
     public void Restart()
@@ -118,6 +175,7 @@ public class GameManager : MonoBehaviour
 
         isBattle = false;
         stage++;
+        SetGround(stage, StageType);
     }
 
     IEnumerator InBattle()
@@ -236,19 +294,6 @@ public class GameManager : MonoBehaviour
         //플레이어 UI
         playerHealth.text = player.health + "/" + player.maxhealth;
         playerCoin.text= string.Format("{0:n0}", player.coin);
-
-        /*if (player.equipWeapon == null )
-        {
-            playerAmmo.text = "- / " + player.ammo;
-        }
-        else if(player.equipWeapon.type == Weapon.Type.Melee)
-        {
-            playerAmmo.text = "- / " + player.ammo;
-        }
-        else
-        {
-            playerAmmo.text = player.equipWeapon.curAmmo + " / " + player.ammo;
-        }*/
 
         //무기 UI
         //weapon1Img.color = new Color(1, 1, 1, player.hasweapon ? 1 : 0);

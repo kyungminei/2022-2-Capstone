@@ -124,11 +124,11 @@ public class Enemy : MonoBehaviour
         {
             case Type.A:
 
-                yield return new WaitForSeconds(0.5f);
+                yield return new WaitForSeconds(0.75f);
                 
                 MeleeArea.enabled = true;
 
-                yield return new WaitForSeconds(1.0f);
+                yield return new WaitForSeconds(0.3f);
                 MeleeArea.enabled = false;
 
                 yield return new WaitForSeconds(1.0f);
@@ -136,20 +136,20 @@ public class Enemy : MonoBehaviour
 
 
             case Type.B:
-                yield return new WaitForSeconds(0.5f);
+                yield return new WaitForSeconds(0.75f);
                 MeleeArea.enabled = true;
 
-                yield return new WaitForSeconds(0.7f);
+                yield return new WaitForSeconds(0.3f);
                 MeleeArea.enabled = false;
 
                 yield return new WaitForSeconds(1.0f);
                 break;
 
             case Type.C:
-                yield return new WaitForSeconds(0.7f);
+                yield return new WaitForSeconds(1.5f);
                 MeleeArea.enabled = true;
 
-                yield return new WaitForSeconds(1.0f);
+                yield return new WaitForSeconds(0.3f);
                 MeleeArea.enabled = false;
 
                 yield return new WaitForSeconds(1.5f);
@@ -196,21 +196,11 @@ public class Enemy : MonoBehaviour
     {
         skMat.materials[0].color = Color.red;
 
-        /*foreach(MeshRenderer mesh in mat)
-        {
-            mesh.material.color = Color.red;
-        } */
-
         yield return new WaitForSeconds(0.1f);
 
         if(curHealth>0)
         {
             skMat.materials[0].color = firstColor;
-
-            /*foreach (MeshRenderer mesh in mat)
-            {
-                mesh.material.color = Color.white;
-            }*/
         }
         else
         {
@@ -221,10 +211,6 @@ public class Enemy : MonoBehaviour
             }
 
             skMat.materials[0].color = Color.gray;
-            /*foreach (MeshRenderer mesh in mat)
-            {
-                mesh.material.color = Color.gray;
-            }*/
 
             gameObject.layer = 14;
             isChase = false;
@@ -257,7 +243,7 @@ public class Enemy : MonoBehaviour
                     break;
             }
 
-            if (isGrenade)
+            /*if (isGrenade)
             {
                 reactVec = reactVec.normalized;
                 reactVec += Vector3.up * 3;
@@ -265,13 +251,12 @@ public class Enemy : MonoBehaviour
                 rigid.freezeRotation = false;
                 rigid.AddForce(reactVec * 5, ForceMode.Impulse);
                 rigid.AddTorque(reactVec * 15, ForceMode.Impulse);
-            }
-            else
-            {
-                reactVec = reactVec.normalized;
-                reactVec += Vector3.up;
-                rigid.AddForce(reactVec * 5, ForceMode.Impulse);
-            }
+            }*/     
+            
+            reactVec = reactVec.normalized;
+            reactVec += Vector3.up;
+            rigid.AddForce(reactVec * 5, ForceMode.Impulse);
+            
              Destroy(gameObject, 4);
              isDead = true;
         }
