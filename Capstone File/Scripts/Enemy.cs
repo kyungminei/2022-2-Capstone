@@ -22,22 +22,43 @@ public class Enemy : MonoBehaviour
 
     public Rigidbody rigid;
     public BoxCollider boxCollider;
-    public MeshRenderer[] mat;
+    //public MeshRenderer[] mat;
+    public SkinnedMeshRenderer skMat;
+    public Color firstColor; //원래 색상 저장.
+
     public NavMeshAgent nav;
     public Animator anim;
+
+    public AudioClip HitSound;
+    AudioSource audioSource;
 
     private void Awake()
     {
         rigid = GetComponent<Rigidbody>();
         boxCollider = GetComponent<BoxCollider>();
-        mat = GetComponentsInChildren<MeshRenderer>();
+        //mat = GetComponentsInChildren<MeshRenderer>();
+        skMat = GetComponentInChildren<SkinnedMeshRenderer>();
         nav = GetComponent<NavMeshAgent>();
         anim = GetComponentInChildren<Animator>();
+        this.audioSource = GetComponent<AudioSource>();
+
+        firstColor = skMat.materials[0].color;
 
         if (enemyType!=Type.D)
         {
             Invoke("ChaseStart", 1.0f);
         }
+    }
+
+    void PlaySound(string action)
+    {
+        switch (action)
+        {
+            case "Hit":
+                audioSource.clip = HitSound;
+                break;
+        }
+        audioSource.Play();
     }
 
     void ChaseStart()
@@ -124,12 +145,11 @@ public class Enemy : MonoBehaviour
         switch (enemyType)
         {
             case Type.A:
-
-                yield return new WaitForSeconds(0.5f);
+                yield return new WaitForSeconds(0.75f);
                 
                 MeleeArea.enabled = true;
 
-                yield return new WaitForSeconds(1.0f);
+                yield return new WaitForSeconds(0.3f);
                 MeleeArea.enabled = false;
 
                 yield return new WaitForSeconds(1.0f);
@@ -137,20 +157,20 @@ public class Enemy : MonoBehaviour
 
 
             case Type.B:
-                yield return new WaitForSeconds(0.5f);
+                yield return new WaitForSeconds(0.75f);
                 MeleeArea.enabled = true;
 
-                yield return new WaitForSeconds(0.7f);
+                yield return new WaitForSeconds(0.3f);
                 MeleeArea.enabled = false;
 
                 yield return new WaitForSeconds(1.0f);
                 break;
 
             case Type.C:
-                yield return new WaitForSeconds(0.7f);
+                yield return new WaitForSeconds(1.5f);
                 MeleeArea.enabled = true;
 
-                yield return new WaitForSeconds(1.0f);
+                yield return new WaitForSeconds(0.3f);
                 MeleeArea.enabled = false;
 
                 yield return new WaitForSeconds(1.5f);
@@ -173,7 +193,6 @@ public class Enemy : MonoBehaviour
         {
             AttackAreaWeaponInfo atk = other.GetComponent<AttackAreaWeaponInfo>();
             Weapon weapon = atk.matchWeaponGameObject.GetComponent<Weapon>();
-            //Weapon weapon = other.GetComponent<Weapon>(); 
             curHealth -= weapon.meleeDamage;
             if (curHealth <= 0) curHealth = 0;
 
@@ -196,33 +215,25 @@ public class Enemy : MonoBehaviour
 
     IEnumerator OnDamage(Vector3 reactVec, bool isGrenade)
     {
-        //몬스터 시체에 또 총을 쏘면, 몬스터count가 줄어들길래 추가해봄.
-        if (isDead)
-            yield break;
-
-        foreach(MeshRenderer mesh in mat)
-        {
-            mesh.material.color = Color.red;
-        }
+        PlaySound("Hit");
+        skMat.materials[0].color = Color.red;
 
         yield return new WaitForSeconds(0.1f);
 
         if(curHealth>0)
         {
-            foreach (MeshRenderer mesh in mat)
-            {
-                mesh.material.color = Color.white;
-            }
+            skMat.materials[0].color = firstColor;
         }
         else
         {
-            foreach (MeshRenderer mesh in mat)
+            //몬스터 시체에 또 총을 쏘면, 몬스터count가 줄어들길래 추가해봄.
+            if (isDead)
             {
-                mesh.material.color = Color.gray;
+                yield break;
             }
+            skMat.materials[0].color = Color.gray;
 
-            gameObject.layer = 14;
-            isDead = true;
+            gameObject.layer = 12;
             isChase = false;
             nav.enabled = false; //사망리액션을 유지하기 위해 nav 끔
             anim.SetTrigger("Dodie");
@@ -251,7 +262,7 @@ public class Enemy : MonoBehaviour
                     break;
             }
 
-            if (isGrenade)
+            /*if (isGrenade)
             {
                 reactVec = reactVec.normalized;
                 reactVec += Vector3.up * 3;
@@ -259,15 +270,14 @@ public class Enemy : MonoBehaviour
                 rigid.freezeRotation = false;
                 rigid.AddForce(reactVec * 5, ForceMode.Impulse);
                 rigid.AddTorque(reactVec * 15, ForceMode.Impulse);
-            }
-            else
-            {
-                reactVec = reactVec.normalized;
-                reactVec += Vector3.up;
-                rigid.AddForce(reactVec * 5, ForceMode.Impulse);
-            }
-             Destroy(gameObject, 4);
+            }*/     
             
+            reactVec = reactVec.normalized;
+            reactVec += Vector3.up;
+            rigid.AddForce(reactVec * 5, ForceMode.Impulse);
+            
+             Destroy(gameObject, 4);
+             isDead = true;
         }
     }
 }

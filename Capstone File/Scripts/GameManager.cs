@@ -13,7 +13,6 @@ public class GameManager : MonoBehaviour
     public Boss boss;
     public GameObject itemShop;
     public GameObject startZone;
-    public GameObject weaponShop;
     public int stage;
     public float playTime;
     public bool isBattle;
@@ -21,12 +20,18 @@ public class GameManager : MonoBehaviour
     public int enemyCntB;
     public int enemyCntC;
     public int enemyCntD;
+    public GameObject[] stageGrounds;
+    public GameObject curGround;
+
+    public enum stageType { spring, summer, fall, winter};
+    public stageType StageType;
 
 
     public Transform[] enemyZone;
     public GameObject[] enemies;
     public List<int> enemyList;
 
+    public GameObject seasonPanel;
     public GameObject menuPanel;
     public GameObject gamePanel;
     public GameObject overPanel;
@@ -46,16 +51,60 @@ public class GameManager : MonoBehaviour
     public RectTransform bossHealthBar;
     public Text curScoreText;
     public Text bestScoreText;
+    public GameObject stageClearText;
+
+    public AudioClip ClearSound;
+    AudioSource audioSource;
 
     private void Awake()
     {
         enemyList = new List<int>();
         maxScoreText.text = string.Format("{0:n0}", PlayerPrefs.GetInt("MaxScore"));
+        this.audioSource = GetComponent<AudioSource>();
 
-        if(PlayerPrefs.HasKey("MaxScore"))
+        if (PlayerPrefs.HasKey("MaxScore"))
         {
             PlayerPrefs.SetInt("MaxScore", 0);
         }
+    }
+
+    public void SetGround(int stage_num, stageType stage_Type)
+    {
+        stage = stage_num;
+        StageType = stage_Type;
+
+        if (stage == 0) return;
+
+        if (stage > 4) Restart();
+
+        switch(StageType)
+        {
+            case stageType.spring:
+                stageGrounds[stage-1].SetActive(true);
+                curGround.SetActive(false);
+                curGround = stageGrounds[stage - 1];
+                break;
+
+            case stageType.summer:
+                stageGrounds[stage - 1].SetActive(true);
+                curGround.SetActive(false);
+                curGround = stageGrounds[stage - 1];
+                break;
+
+            case stageType.fall:
+                stageGrounds[stage - 1].SetActive(true);
+                curGround.SetActive(false);
+                curGround = stageGrounds[stage - 1];
+                break;
+
+            case stageType.winter:
+                stageGrounds[stage - 1].SetActive(true);
+                curGround.SetActive(false);
+                curGround = stageGrounds[stage - 1];
+                break;
+        }
+
+        GameStart();
     }
 
     public void GameStart()
@@ -63,7 +112,9 @@ public class GameManager : MonoBehaviour
         MenuCamera.SetActive(false);
         GameCamera.SetActive(true);
 
-        menuPanel.SetActive(false);
+        //menuPanel.SetActive(false);
+        seasonPanel.SetActive(false);
+
         gamePanel.SetActive(true);
 
         player.gameObject.SetActive(true);
@@ -83,6 +134,17 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void OnSeasonPanel()
+    {
+        menuPanel.SetActive(false);
+        seasonPanel.SetActive(true);
+    }
+
+    public void QuitGameButton()
+    {
+        Application.Quit();
+    }
+
     public void Restart()
     {
         SceneManager.LoadScene(0);
@@ -91,7 +153,7 @@ public class GameManager : MonoBehaviour
     public void StageStart()
     {
         itemShop.SetActive(false);
-        weaponShop.SetActive(false);
+        //weaponShop.SetActive(false);
         startZone.SetActive(false);
 
         foreach( Transform zone in enemyZone)
@@ -106,9 +168,11 @@ public class GameManager : MonoBehaviour
     public void StageEnd()
     {
         player.transform.position = Vector3.up * 0.8f;
+        player.isInSlowZone = false;
+        player.speed = player.standardSpeed;
 
         itemShop.SetActive(true);
-        weaponShop.SetActive(true);
+        //weaponShop.SetActive(true);
         startZone.SetActive(true);
 
         foreach (Transform zone in enemyZone)
@@ -118,11 +182,12 @@ public class GameManager : MonoBehaviour
 
         isBattle = false;
         stage++;
+        SetGround(stage, StageType);
     }
 
     IEnumerator InBattle()
     {
-        if(stage%5==0)
+        if(stage==4)
         {
             enemyCntD++;
             GameObject instantEnemy = Instantiate(enemies[3], enemyZone[0].position, enemyZone[0].rotation);
@@ -207,9 +272,13 @@ public class GameManager : MonoBehaviour
             yield return null;
         }
 
+        stageClearText.SetActive(true);
+        audioSource.clip = ClearSound;
+        audioSource.Play();
         yield return new WaitForSeconds(4f);
 
         boss = null;
+        stageClearText.SetActive(false);
         StageEnd();
     }
 
@@ -236,19 +305,6 @@ public class GameManager : MonoBehaviour
         //플레이어 UI
         playerHealth.text = player.health + "/" + player.maxhealth;
         playerCoin.text= string.Format("{0:n0}", player.coin);
-
-        /*if (player.equipWeapon == null )
-        {
-            playerAmmo.text = "- / " + player.ammo;
-        }
-        else if(player.equipWeapon.type == Weapon.Type.Melee)
-        {
-            playerAmmo.text = "- / " + player.ammo;
-        }
-        else
-        {
-            playerAmmo.text = player.equipWeapon.curAmmo + " / " + player.ammo;
-        }*/
 
         //무기 UI
         //weapon1Img.color = new Color(1, 1, 1, player.hasweapon ? 1 : 0);
