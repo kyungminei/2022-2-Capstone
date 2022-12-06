@@ -14,7 +14,7 @@ public class Enemy : MonoBehaviour
     public GameManager manager;
     public Transform Target;
     public bool isChase;
-    public BoxCollider MeleeArea; //°ø°İ¹üÀ§
+    public BoxCollider MeleeArea; //ê³µê²©ë²”ìœ„
     public GameObject bullet;
     public bool isAttack;
     public bool isDead;
@@ -22,22 +22,43 @@ public class Enemy : MonoBehaviour
 
     public Rigidbody rigid;
     public BoxCollider boxCollider;
-    public MeshRenderer[] mat;
+    //public MeshRenderer[] mat;
+    public SkinnedMeshRenderer skMat;
+    public Color firstColor; //ì›ë˜ ìƒ‰ìƒ ì €ì¥.
+
     public NavMeshAgent nav;
     public Animator anim;
+
+    public AudioClip HitSound;
+    AudioSource audioSource;
 
     private void Awake()
     {
         rigid = GetComponent<Rigidbody>();
         boxCollider = GetComponent<BoxCollider>();
-        mat = GetComponentsInChildren<MeshRenderer>();
+        //mat = GetComponentsInChildren<MeshRenderer>();
+        skMat = GetComponentInChildren<SkinnedMeshRenderer>();
         nav = GetComponent<NavMeshAgent>();
         anim = GetComponentInChildren<Animator>();
+        this.audioSource = GetComponent<AudioSource>();
+
+        firstColor = skMat.materials[0].color;
 
         if (enemyType!=Type.D)
         {
             Invoke("ChaseStart", 1.0f);
         }
+    }
+
+    void PlaySound(string action)
+    {
+        switch (action)
+        {
+            case "Hit":
+                audioSource.clip = HitSound;
+                break;
+        }
+        audioSource.Play();
     }
 
     void ChaseStart()
@@ -58,7 +79,7 @@ public class Enemy : MonoBehaviour
         if(nav.enabled && enemyType != Type.D)
         {
             nav.SetDestination(Target.position);
-            nav.isStopped = !isChase;  //ÂÑ´Â ÁßÀÌ¸é ¾È¸ØÃß°í, ÂÑ´Â ÁßÀÌ ¾Æ´Ï¸é ¸ØÃã
+            nav.isStopped = !isChase;  //ì«“ëŠ” ì¤‘ì´ë©´ ì•ˆë©ˆì¶”ê³ , ì«“ëŠ” ì¤‘ì´ ì•„ë‹ˆë©´ ë©ˆì¶¤
         }
     }
 
@@ -85,6 +106,7 @@ public class Enemy : MonoBehaviour
                     targetRange = 3f;
                     break;
 
+
                 case Type.B:
                     targetRadius = 1.0f;
                     targetRange = 3f;
@@ -100,7 +122,7 @@ public class Enemy : MonoBehaviour
                 transform.forward, targetRange,
                 LayerMask.GetMask("Player"));
 
-            if (rayHits.Length > 0 && !isAttack) //Ãæµ¹ÇÑ°Ô ÀÖÀ¸¸é
+            if (rayHits.Length > 0 && !isAttack) //ì¶©ëŒí•œê²Œ ìˆìœ¼ë©´
             {
                 StartCoroutine(Attack());
             }
@@ -116,34 +138,36 @@ public class Enemy : MonoBehaviour
         switch (enemyType)
         {
             case Type.A:
-                yield return new WaitForSeconds(0.5f);
+
+                yield return new WaitForSeconds(0.75f);
+                
                 MeleeArea.enabled = true;
 
-                yield return new WaitForSeconds(1.0f);
+                yield return new WaitForSeconds(0.3f);
                 MeleeArea.enabled = false;
 
                 yield return new WaitForSeconds(1.0f);
                 break;
 
+
             case Type.B:
-                yield return new WaitForSeconds(0.5f);
+                yield return new WaitForSeconds(0.75f);
                 MeleeArea.enabled = true;
 
-                yield return new WaitForSeconds(0.7f);
+                yield return new WaitForSeconds(0.3f);
                 MeleeArea.enabled = false;
 
                 yield return new WaitForSeconds(1.0f);
                 break;
 
             case Type.C:
-                yield return new WaitForSeconds(0.7f);
+                yield return new WaitForSeconds(1.5f);
                 MeleeArea.enabled = true;
 
-                yield return new WaitForSeconds(1.0f);
+                yield return new WaitForSeconds(0.3f);
                 MeleeArea.enabled = false;
 
                 yield return new WaitForSeconds(1.5f);
-                break;
                 break;
         }
         isChase = true;
@@ -161,53 +185,51 @@ public class Enemy : MonoBehaviour
     {
         if(other.tag=="Melee")
         {
-            Weapon weapon = other.GetComponent<Weapon>();
-            curHealth -= weapon.damage;
+            AttackAreaWeaponInfo atk = other.GetComponent<AttackAreaWeaponInfo>();
+            Weapon weapon = atk.matchWeaponGameObject.GetComponent<Weapon>();
+            curHealth -= weapon.meleeDamage;
+            if (curHealth <= 0) curHealth = 0;
 
             Vector3 reactVec = transform.position - other.transform.position;
             StartCoroutine(OnDamage(reactVec, false));
 
         }
-        else if (other.tag=="Bullet")
+        else if(other.tag=="ChargeMelee")
         {
-            Bullet bullet = other.GetComponent<Bullet>();
-            curHealth -= bullet.damage;
+            AttackAreaWeaponInfo atk = other.GetComponent<AttackAreaWeaponInfo>();
+            Weapon weapon = atk.matchWeaponGameObject.GetComponent<Weapon>();
+            curHealth -= weapon.chargeDamage;
+            if (curHealth <= 0) curHealth = 0;
+            Debug.Log("ì ì´ ì°¨ì§•ê³µê²©ì„ ë§ì•˜ë‹¤!!");
 
             Vector3 reactVec = transform.position - other.transform.position;
-            Destroy(other.gameObject);
             StartCoroutine(OnDamage(reactVec, false));
-
         }
     }
 
     IEnumerator OnDamage(Vector3 reactVec, bool isGrenade)
     {
-
-        foreach (MeshRenderer mesh in mat)
-        {
-            mesh.material.color = Color.red;
-        }
+        PlaySound("Hit");
+        skMat.materials[0].color = Color.red;
 
         yield return new WaitForSeconds(0.1f);
 
         if(curHealth>0)
         {
-            foreach (MeshRenderer mesh in mat)
-            {
-                mesh.material.color = Color.white;
-            }
+            skMat.materials[0].color = firstColor;
         }
         else
         {
-            foreach (MeshRenderer mesh in mat)
+            //ëª¬ìŠ¤í„° ì‹œì²´ì— ë˜ ì´ì„ ì˜ë©´, ëª¬ìŠ¤í„°countê°€ ì¤„ì–´ë“¤ê¸¸ë˜ ì¶”ê°€í•´ë´„.
+            if (isDead)
             {
-                mesh.material.color = Color.gray;
+                yield break;
             }
+            skMat.materials[0].color = Color.gray;
 
-            gameObject.layer = 14;
-            isDead = true;
+            gameObject.layer = 12;
             isChase = false;
-            nav.enabled = false; //»ç¸Á¸®¾×¼ÇÀ» À¯ÁöÇÏ±â À§ÇØ nav ²û
+            nav.enabled = false; //ì‚¬ë§ë¦¬ì•¡ì…˜ì„ ìœ ì§€í•˜ê¸° ìœ„í•´ nav ë”
             anim.SetTrigger("Dodie");
 
             Player player = Target.GetComponent<Player>();
@@ -234,7 +256,7 @@ public class Enemy : MonoBehaviour
                     break;
             }
 
-            if (isGrenade)
+            /*if (isGrenade)
             {
                 reactVec = reactVec.normalized;
                 reactVec += Vector3.up * 3;
@@ -242,15 +264,14 @@ public class Enemy : MonoBehaviour
                 rigid.freezeRotation = false;
                 rigid.AddForce(reactVec * 5, ForceMode.Impulse);
                 rigid.AddTorque(reactVec * 15, ForceMode.Impulse);
-            }
-            else
-            {
-                reactVec = reactVec.normalized;
-                reactVec += Vector3.up;
-                rigid.AddForce(reactVec * 5, ForceMode.Impulse);
-            }
-             Destroy(gameObject, 4);
+            }*/     
             
+            reactVec = reactVec.normalized;
+            reactVec += Vector3.up;
+            rigid.AddForce(reactVec * 5, ForceMode.Impulse);
+            
+             Destroy(gameObject, 4);
+             isDead = true;
         }
     }
 }
