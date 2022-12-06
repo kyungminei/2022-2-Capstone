@@ -13,7 +13,6 @@ public class GameManager : MonoBehaviour
     public Boss boss;
     public GameObject itemShop;
     public GameObject startZone;
-    public GameObject weaponShop;
     public int stage;
     public float playTime;
     public bool isBattle;
@@ -21,12 +20,18 @@ public class GameManager : MonoBehaviour
     public int enemyCntB;
     public int enemyCntC;
     public int enemyCntD;
+    public GameObject[] stageGrounds;
+    public GameObject curGround;
+
+    public enum stageType { spring, summer, fall, winter};
+    public stageType StageType;
 
 
     public Transform[] enemyZone;
     public GameObject[] enemies;
     public List<int> enemyList;
 
+    public GameObject seasonPanel;
     public GameObject menuPanel;
     public GameObject gamePanel;
     public GameObject overPanel;
@@ -37,12 +42,8 @@ public class GameManager : MonoBehaviour
     public Text stageText;
     public Text playtimeText;
     public Text playerHealth;
-    public Text playerAmmo;
     public Text playerCoin;
     public Image weapon1Img;
-    public Image weapon2Img;
-    public Image weapon3Img;
-    public Image weaponRImg;
     public Text enemyAText;
     public Text enemyBText;
     public Text enemyCText;
@@ -50,16 +51,60 @@ public class GameManager : MonoBehaviour
     public RectTransform bossHealthBar;
     public Text curScoreText;
     public Text bestScoreText;
+    public GameObject stageClearText;
+
+    public AudioClip ClearSound;
+    AudioSource audioSource;
 
     private void Awake()
     {
         enemyList = new List<int>();
         maxScoreText.text = string.Format("{0:n0}", PlayerPrefs.GetInt("MaxScore"));
+        this.audioSource = GetComponent<AudioSource>();
 
-        if(PlayerPrefs.HasKey("MaxScore"))
+        if (PlayerPrefs.HasKey("MaxScore"))
         {
             PlayerPrefs.SetInt("MaxScore", 0);
         }
+    }
+
+    public void SetGround(int stage_num, stageType stage_Type)
+    {
+        stage = stage_num;
+        StageType = stage_Type;
+
+        if (stage == 0) return;
+
+        if (stage > 4) Restart();
+
+        switch(StageType)
+        {
+            case stageType.spring:
+                stageGrounds[stage-1].SetActive(true);
+                curGround.SetActive(false);
+                curGround = stageGrounds[stage - 1];
+                break;
+
+            case stageType.summer:
+                stageGrounds[stage - 1].SetActive(true);
+                curGround.SetActive(false);
+                curGround = stageGrounds[stage - 1];
+                break;
+
+            case stageType.fall:
+                stageGrounds[stage - 1].SetActive(true);
+                curGround.SetActive(false);
+                curGround = stageGrounds[stage - 1];
+                break;
+
+            case stageType.winter:
+                stageGrounds[stage - 1].SetActive(true);
+                curGround.SetActive(false);
+                curGround = stageGrounds[stage - 1];
+                break;
+        }
+
+        GameStart();
     }
 
     public void GameStart()
@@ -67,7 +112,9 @@ public class GameManager : MonoBehaviour
         MenuCamera.SetActive(false);
         GameCamera.SetActive(true);
 
-        menuPanel.SetActive(false);
+        //menuPanel.SetActive(false);
+        seasonPanel.SetActive(false);
+
         gamePanel.SetActive(true);
 
         player.gameObject.SetActive(true);
@@ -87,6 +134,17 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    public void OnSeasonPanel()
+    {
+        menuPanel.SetActive(false);
+        seasonPanel.SetActive(true);
+    }
+
+    public void QuitGameButton()
+    {
+        Application.Quit();
+    }
+
     public void Restart()
     {
         SceneManager.LoadScene(0);
@@ -95,7 +153,7 @@ public class GameManager : MonoBehaviour
     public void StageStart()
     {
         itemShop.SetActive(false);
-        weaponShop.SetActive(false);
+        //weaponShop.SetActive(false);
         startZone.SetActive(false);
 
         foreach( Transform zone in enemyZone)
@@ -110,9 +168,11 @@ public class GameManager : MonoBehaviour
     public void StageEnd()
     {
         player.transform.position = Vector3.up * 0.8f;
+        player.isInSlowZone = false;
+        player.speed = player.standardSpeed;
 
         itemShop.SetActive(true);
-        weaponShop.SetActive(true);
+        //weaponShop.SetActive(true);
         startZone.SetActive(true);
 
         foreach (Transform zone in enemyZone)
@@ -122,11 +182,12 @@ public class GameManager : MonoBehaviour
 
         isBattle = false;
         stage++;
+        SetGround(stage, StageType);
     }
 
     IEnumerator InBattle()
     {
-        if(stage%5==0)
+        if(stage==4)
         {
             enemyCntD++;
             GameObject instantEnemy = Instantiate(enemies[3], enemyZone[0].position, enemyZone[0].rotation);
@@ -202,7 +263,8 @@ public class GameManager : MonoBehaviour
             enemy.Target = player.transform;
             enemy.manager = this;
             enemyList.RemoveAt(0);
-            yield return new WaitForSeconds(0.4f); //Enumerator¿« whileπÆ æ»ø° yield return¿ª ∆˜«‘Ω√≈∞¥¬ ∞Õ¿Ã ¡¡¥Ÿ.
+            yield return new WaitForSeconds(0.4f); //EnumeratorÏùò whileÎ¨∏ ÏïàÏóê yield returnÏùÑ Ìè¨Ìï®ÏãúÌÇ§Îäî Í≤ÉÏù¥ Ï¢ãÎã§.
+
         }
 
         while(enemyCntA+enemyCntB+enemyCntC+enemyCntD>0)
@@ -210,9 +272,13 @@ public class GameManager : MonoBehaviour
             yield return null;
         }
 
+        stageClearText.SetActive(true);
+        audioSource.clip = ClearSound;
+        audioSource.Play();
         yield return new WaitForSeconds(4f);
 
         boss = null;
+        stageClearText.SetActive(false);
         StageEnd();
     }
 
@@ -226,7 +292,7 @@ public class GameManager : MonoBehaviour
 
     private void LateUpdate()
     {
-        //ªÛ¥‹ UI
+        //ÏÉÅÎã® UI
         scoreText.text= string.Format("{0:n0}", player.score);
         stageText.text = "STAGE " + stage;
 
@@ -236,34 +302,19 @@ public class GameManager : MonoBehaviour
 
         playtimeText.text = string.Format("{0:00}", hour) + ":" + string.Format("{0:00}", min) + ":" + string.Format("{0:00}", second);
 
-        //«√∑π¿ÃæÓ UI
+        //ÌîåÎ†àÏù¥Ïñ¥ UI
         playerHealth.text = player.health + "/" + player.maxhealth;
         playerCoin.text= string.Format("{0:n0}", player.coin);
-        if (player.equipWeapon == null )
-        {
-            playerAmmo.text = "- / " + player.ammo;
-        }
-        else if(player.equipWeapon.type == Weapon.Type.Melee)
-        {
-            playerAmmo.text = "- / " + player.ammo;
-        }
-        else
-        {
-            playerAmmo.text = player.equipWeapon.curAmmo + " / " + player.ammo;
-        }
 
-        //π´±‚ UI
-        weapon1Img.color = new Color(1, 1, 1, player.hasweapons[0] ? 1 : 0);
-        weapon2Img.color = new Color(1, 1, 1, player.hasweapons[1] ? 1 : 0);
-        weapon3Img.color = new Color(1, 1, 1, player.hasweapons[2] ? 1 : 0);
-        weaponRImg.color = new Color(1, 1, 1, player.hasGrenades>0 ? 1 : 0);
+        //Î¨¥Í∏∞ UI
+        //weapon1Img.color = new Color(1, 1, 1, player.hasweapon ? 1 : 0);
 
-        //∏ÛΩ∫≈Õ º˝¿⁄UI
+        //Î™¨Ïä§ÌÑ∞ Ïà´ÏûêUI
         enemyAText.text = enemyCntA.ToString();
         enemyBText.text = enemyCntB.ToString();
         enemyCText.text = enemyCntC.ToString();
 
-        //∫∏Ω∫ √º∑¬ UI
+        //Î≥¥Ïä§ Ï≤¥Î†• UI
         if(boss!=null)
         {
             bossHealthGroup.anchoredPosition = Vector3.down* 30;
