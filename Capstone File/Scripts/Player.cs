@@ -8,6 +8,8 @@ using static UnityEngine.GraphicsBuffer;
 public class Player : MonoBehaviour
 {
     public float speed;
+    public float slowSpeed;
+    public float standardSpeed; //하이어라키창에서 수정안해도 됨.
     public GameObject weapon;
     public Camera followCamera;
     public bool hasweapon;
@@ -52,6 +54,7 @@ public class Player : MonoBehaviour
     bool isClicked;
     bool isCharge;
     bool isAttackTurn; // 공격에 의한 회전을 하는 중인지 아닌지.
+    public bool isInSlowZone;
 
     Vector3 movevec;
     Vector3 dodgevec;
@@ -59,7 +62,9 @@ public class Player : MonoBehaviour
 
     Animator animator;
     Rigidbody rigid;
-    MeshRenderer[] meshs;
+    //MeshRenderer[] meshs;
+    SkinnedMeshRenderer skMat;
+    Color firstColor; //처음 캐릭터 색상 저장
 
     GameObject nearobject;
     public Weapon equipWeapon; //장착중인 무기
@@ -70,10 +75,14 @@ public class Player : MonoBehaviour
     {
         animator = GetComponentInChildren<Animator>();
         rigid = GetComponent<Rigidbody>();
-        meshs= GetComponentsInChildren<MeshRenderer>();
+        //meshs= GetComponentsInChildren<MeshRenderer>();
+        skMat = GetComponentInChildren<SkinnedMeshRenderer>();
 
-        PlayerPrefs.SetInt("MaxScore",11200);
+        PlayerPrefs.SetInt("MaxScore",0);
         Debug.Log(PlayerPrefs.GetInt("MaxScore"));
+
+        firstColor = skMat.materials[0].color;
+        standardSpeed = speed;
     }
 
     void Start()
@@ -87,7 +96,7 @@ public class Player : MonoBehaviour
         Move();
         Turn();
         arrowTurn();
-        Jump();
+        //Jump();
         RecordFDownTime();
         Attack();
         Dodge();
@@ -98,7 +107,7 @@ public class Player : MonoBehaviour
     {
         hAxis = Input.GetAxisRaw("Horizontal"); //GetAxisRaw : -1, 0 ,1 
         vAxis = Input.GetAxisRaw("Vertical");
-        wDown = Input.GetButton("Walk");
+        wDown = Input.GetButton("Walk"); //수정 필
         jDown = Input.GetButtonDown("Jump");
         fDown = Input.GetButtonDown("Fire1");
         fUp = Input.GetButtonUp("Fire1");
@@ -124,11 +133,11 @@ public class Player : MonoBehaviour
 
         if(!isBorder)
         {
-            transform.position += movevec * speed * (wDown ? 0.3f : 1f) * Time.deltaTime;
+            transform.position += movevec * speed  * Time.deltaTime;
         }
 
-        animator.SetBool("Isrun", movevec != Vector3.zero); 
-        animator.SetBool("Iswalk", wDown);
+        animator.SetBool("Iswalk", movevec != Vector3.zero);
+        //animator.SetBool("Iswalk", wDown);
     }
 
     void Turn()
@@ -187,15 +196,26 @@ public class Player : MonoBehaviour
             animator.SetTrigger("Dododge");
             speed *= 2;
             isDodge = true;
+            Debug.Log(speed);
 
-            Invoke("DodgeOut", 0.5f);
+            Invoke("DodgeOut", 0.7f);
         }
     }
 
     void DodgeOut()
     {
-        speed *= 0.5f;
-        isDodge = false;
+        if(isInSlowZone)
+        {
+            speed = slowSpeed;
+            isDodge = false;
+            return;
+        }
+        else
+        {
+            speed = standardSpeed;
+            isDodge = false;
+        }
+        //speed *= 0.5f;
     }
 
     void interation()
@@ -232,9 +252,9 @@ public class Player : MonoBehaviour
             StartCoroutine("SeeToMousePos");
 
             equipWeapon.ChargeAttack();
-            animator.SetTrigger("Doswing");
+            animator.SetTrigger("Doattack");
 
-            ChargeSound.Play();
+            //ChargeSound.Play();
             fireDelay = 0;
             isCharge = false;
         }
@@ -244,9 +264,9 @@ public class Player : MonoBehaviour
             StartCoroutine("SeeToMousePos");
 
             equipWeapon.MeleeAttack();
-            animator.SetTrigger("Doswing");
+            animator.SetTrigger("Doattack");
 
-            hammerSound.Play();
+            //hammerSound.Play();
             fireDelay = 0;
         }
     }
@@ -315,14 +335,14 @@ public class Player : MonoBehaviour
         StopToWall();
     }
 
-    private void OnCollisionEnter(Collision collision)
+    /*private void OnCollisionEnter(Collision collision)
     {
         if(collision.gameObject.tag=="Floor")
         {
             animator.SetBool("Isjump", false);
             isJump = false;
         }
-    }
+    }*/ //점프모션 추가되면 활성화
 
     private void OnTriggerEnter(Collider other)
     {
@@ -363,16 +383,35 @@ public class Player : MonoBehaviour
             if (other.GetComponent<Rigidbody>() != null)
                 Destroy(other.gameObject);
         }
+        else if(other.tag=="FallingObject")
+        {
+            if(!isDamaged)
+            {
+                FallingObject fallingObj = other.GetComponent<FallingObject>();
+                health -= fallingObj.Damage;
+                fallingObj.particle.gameObject.SetActive(true);
+
+                Vector3 reactVec = gameObject.transform.position - other.transform.position;
+                reactVec = reactVec.normalized;
+                rigid.AddForce(reactVec * 5,ForceMode.Impulse);
+
+                StartCoroutine(OnDamage(false));
+
+                Destroy(other.gameObject);
+            }
+        }
+        else if (other.tag == "SlowZone")
+        {
+            isInSlowZone = true;
+            speed = slowSpeed;
+        }
     }
 
     IEnumerator OnDamage(bool isBossAttack)
     {
         isDamaged = true;
 
-        foreach(MeshRenderer mesh in meshs)
-        {
-            mesh.material.color = Color.yellow;
-        }
+        skMat.materials[0].color = Color.yellow;
 
         if(isBossAttack)
         {
@@ -388,12 +427,9 @@ public class Player : MonoBehaviour
 
         isDamaged = false;
 
-        foreach (MeshRenderer mesh in meshs)
-        {
-            mesh.material.color = Color.white;
-        }
+        skMat.materials[0].color = firstColor;
 
-        if(isBossAttack)
+        if (isBossAttack)
         {
             rigid.velocity = Vector3.zero;
         }
@@ -413,7 +449,6 @@ public class Player : MonoBehaviour
         {
             nearobject = other.gameObject;
         }
-        
     }
 
     private void OnTriggerExit(Collider other)
@@ -433,6 +468,11 @@ public class Player : MonoBehaviour
             isShop = false;
 
             nearobject = null;
+        }
+        else if(other.tag=="SlowZone")
+        {
+            isInSlowZone = false;
+            speed = standardSpeed;
         }
     }
 }

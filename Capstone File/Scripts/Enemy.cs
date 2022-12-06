@@ -212,12 +212,10 @@ public class Enemy : MonoBehaviour
 
             skMat.materials[0].color = Color.gray;
 
-            gameObject.layer = 14;
+            gameObject.layer = 12;
             isChase = false;
             nav.enabled = false; //사망리액션을 유지하기 위해 nav 끔
             anim.SetTrigger("Dodie");
-
-            //죽는 애니메이션 시, 애니메이션에 의해 오브젝트 높이가 변경되고 있음.
 
             Player player = Target.GetComponent<Player>();
             player.score += score;

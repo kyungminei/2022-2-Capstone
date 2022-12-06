@@ -10,10 +10,9 @@ public class GameManager : MonoBehaviour
     public GameObject MenuCamera;
     public GameObject GameCamera;
     public Player player;
-    public Boss boss;
+    public Golem boss;
     public GameObject itemShop;
     public GameObject startZone;
-    public GameObject weaponShop;
     public int stage;
     public float playTime;
     public bool isBattle;
@@ -21,10 +20,7 @@ public class GameManager : MonoBehaviour
     public int enemyCntB;
     public int enemyCntC;
     public int enemyCntD;
-    public GameObject[] sp_Grounds; //봄 ground
-    public GameObject[] su_Grounds; //여름 ground
-    public GameObject[] fa_Grounds; //가을 ground
-    public GameObject[] wi_Grounds; //겨울 ground
+    public GameObject[] stageGrounds;
     public GameObject curGround;
 
     public enum stageType { spring, summer, fall, winter};
@@ -36,7 +32,6 @@ public class GameManager : MonoBehaviour
     public List<int> enemyList;
 
     public GameObject seasonPanel;
-    public GameObject[] stagePanels;
     public GameObject menuPanel;
     public GameObject gamePanel;
     public GameObject overPanel;
@@ -56,6 +51,7 @@ public class GameManager : MonoBehaviour
     public RectTransform bossHealthBar;
     public Text curScoreText;
     public Text bestScoreText;
+    public GameObject stageClearText;
 
     private void Awake()
     {
@@ -75,30 +71,32 @@ public class GameManager : MonoBehaviour
 
         if (stage == 0) return;
 
+        if (stage > 4) Restart();
+
         switch(StageType)
         {
             case stageType.spring:
-                sp_Grounds[stage - 1].SetActive(true);
+                stageGrounds[stage-1].SetActive(true);
                 curGround.SetActive(false);
-                curGround = sp_Grounds[stage - 1];
+                curGround = stageGrounds[stage - 1];
                 break;
 
             case stageType.summer:
-                su_Grounds[stage - 1].SetActive(true);
+                stageGrounds[stage - 1].SetActive(true);
                 curGround.SetActive(false);
-                curGround = su_Grounds[stage - 1];
+                curGround = stageGrounds[stage - 1];
                 break;
 
             case stageType.fall:
-                fa_Grounds[stage - 1].SetActive(true);
+                stageGrounds[stage - 1].SetActive(true);
                 curGround.SetActive(false);
-                curGround = fa_Grounds[stage - 1];
+                curGround = stageGrounds[stage - 1];
                 break;
 
             case stageType.winter:
-                wi_Grounds[stage - 1].SetActive(true);
+                stageGrounds[stage - 1].SetActive(true);
                 curGround.SetActive(false);
-                curGround = wi_Grounds[stage - 1];
+                curGround = stageGrounds[stage - 1];
                 break;
         }
 
@@ -111,10 +109,8 @@ public class GameManager : MonoBehaviour
         GameCamera.SetActive(true);
 
         //menuPanel.SetActive(false);
-        foreach(var pan in stagePanels)
-        {
-            pan.SetActive(false);
-        }
+        seasonPanel.SetActive(false);
+
         gamePanel.SetActive(true);
 
         player.gameObject.SetActive(true);
@@ -140,6 +136,11 @@ public class GameManager : MonoBehaviour
         seasonPanel.SetActive(true);
     }
 
+    public void QuitGameButton()
+    {
+        Application.Quit();
+    }
+
     public void Restart()
     {
         SceneManager.LoadScene(0);
@@ -148,7 +149,7 @@ public class GameManager : MonoBehaviour
     public void StageStart()
     {
         itemShop.SetActive(false);
-        weaponShop.SetActive(false);
+        //weaponShop.SetActive(false);
         startZone.SetActive(false);
 
         foreach( Transform zone in enemyZone)
@@ -163,9 +164,11 @@ public class GameManager : MonoBehaviour
     public void StageEnd()
     {
         player.transform.position = Vector3.up * 0.8f;
+        player.isInSlowZone = false;
+        player.speed = player.standardSpeed;
 
         itemShop.SetActive(true);
-        weaponShop.SetActive(true);
+        //weaponShop.SetActive(true);
         startZone.SetActive(true);
 
         foreach (Transform zone in enemyZone)
@@ -180,14 +183,16 @@ public class GameManager : MonoBehaviour
 
     IEnumerator InBattle()
     {
-        if(stage%5==0)
+        if(stage==4)
         {
             enemyCntD++;
             GameObject instantEnemy = Instantiate(enemies[3], enemyZone[0].position, enemyZone[0].rotation);
-            Enemy enemy = instantEnemy.GetComponent<Enemy>();
-            enemy.Target = player.transform;
-            enemy.manager = this;
-            boss = instantEnemy.GetComponent<Boss>();
+            //Enemy enemy = instantEnemy.GetComponent<Enemy>();
+            //enemy.Target = player.transform;
+            //enemy.manager = this;
+            boss = instantEnemy.GetComponent<Golem>();
+            boss.Target = player.transform;
+            boss.manager = this;
         }
         else
         {
@@ -265,9 +270,11 @@ public class GameManager : MonoBehaviour
             yield return null;
         }
 
+        stageClearText.SetActive(true);
         yield return new WaitForSeconds(4f);
 
         boss = null;
+        stageClearText.SetActive(false);
         StageEnd();
     }
 
