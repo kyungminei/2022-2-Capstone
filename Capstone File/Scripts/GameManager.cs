@@ -10,7 +10,7 @@ public class GameManager : MonoBehaviour
     public GameObject MenuCamera;
     public GameObject GameCamera;
     public Player player;
-    public Golem boss;
+    public Boss boss;
     public GameObject itemShop;
     public GameObject startZone;
     public int stage;
@@ -53,12 +53,16 @@ public class GameManager : MonoBehaviour
     public Text bestScoreText;
     public GameObject stageClearText;
 
+    public AudioClip ClearSound;
+    AudioSource audioSource;
+
     private void Awake()
     {
         enemyList = new List<int>();
         maxScoreText.text = string.Format("{0:n0}", PlayerPrefs.GetInt("MaxScore"));
+        this.audioSource = GetComponent<AudioSource>();
 
-        if(PlayerPrefs.HasKey("MaxScore"))
+        if (PlayerPrefs.HasKey("MaxScore"))
         {
             PlayerPrefs.SetInt("MaxScore", 0);
         }
@@ -187,12 +191,10 @@ public class GameManager : MonoBehaviour
         {
             enemyCntD++;
             GameObject instantEnemy = Instantiate(enemies[3], enemyZone[0].position, enemyZone[0].rotation);
-            //Enemy enemy = instantEnemy.GetComponent<Enemy>();
-            //enemy.Target = player.transform;
-            //enemy.manager = this;
-            boss = instantEnemy.GetComponent<Golem>();
-            boss.Target = player.transform;
-            boss.manager = this;
+            Enemy enemy = instantEnemy.GetComponent<Enemy>();
+            enemy.Target = player.transform;
+            enemy.manager = this;
+            boss = instantEnemy.GetComponent<Boss>();
         }
         else
         {
@@ -271,6 +273,8 @@ public class GameManager : MonoBehaviour
         }
 
         stageClearText.SetActive(true);
+        audioSource.clip = ClearSound;
+        audioSource.Play();
         yield return new WaitForSeconds(4f);
 
         boss = null;

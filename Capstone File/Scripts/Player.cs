@@ -17,8 +17,11 @@ public class Player : MonoBehaviour
     public GameObject ChargeEffect;
     public GameObject arrow;
 
-    public AudioSource hammerSound;
-    public AudioSource ChargeSound;
+    public AudioClip wAttackSound;
+    public AudioClip cAttackSound;
+    public AudioClip DodgeSound;
+    public AudioClip CoinSound;
+    AudioSource audioSource;
 
     public int coin;
     public int health;
@@ -83,6 +86,8 @@ public class Player : MonoBehaviour
 
         firstColor = skMat.materials[0].color;
         standardSpeed = speed;
+
+        this.audioSource = GetComponent<AudioSource>();
     }
 
     void Start()
@@ -96,7 +101,6 @@ public class Player : MonoBehaviour
         Move();
         Turn();
         arrowTurn();
-        //Jump();
         RecordFDownTime();
         Attack();
         Dodge();
@@ -115,6 +119,27 @@ public class Player : MonoBehaviour
         sDown1 = Input.GetButtonDown("swap1");
         sDown2 = Input.GetButtonDown("swap2");
         sDown3 = Input.GetButtonDown("swap3");
+    }
+
+    void PlaySound(string action)
+    {
+        switch (action)
+        {
+            case "wAttack":
+                audioSource.clip = wAttackSound;
+                break;
+            case "cAttack":
+                audioSource.clip = cAttackSound;
+                break;
+            case "Dodge":
+                audioSource.clip = DodgeSound;
+                break;
+
+            case "Coin":
+                audioSource.clip = CoinSound;
+                break;
+        }
+        audioSource.Play();
     }
 
     void Move()
@@ -192,7 +217,8 @@ public class Player : MonoBehaviour
     {
         if (jDown && movevec != Vector3.zero && !isJump && !isDodge && !isDead ) 
         {
-            dodgevec = movevec; 
+            dodgevec = movevec;
+            PlaySound("Dodge");
             animator.SetTrigger("Dododge");
             speed *= 2;
             isDodge = true;
@@ -254,7 +280,7 @@ public class Player : MonoBehaviour
             equipWeapon.ChargeAttack();
             animator.SetTrigger("Doattack");
 
-            //ChargeSound.Play();
+            PlaySound("cAttack");
             fireDelay = 0;
             isCharge = false;
         }
@@ -266,7 +292,7 @@ public class Player : MonoBehaviour
             equipWeapon.MeleeAttack();
             animator.SetTrigger("Doattack");
 
-            //hammerSound.Play();
+            PlaySound("wAttack");
             fireDelay = 0;
         }
     }
@@ -353,6 +379,7 @@ public class Player : MonoBehaviour
             {
                 case Item.Type.Coin:
                     coin += item.value;
+                    //PlaySound("Coin");
                     if (coin > maxcoin)
                     {
                         coin = maxcoin;
