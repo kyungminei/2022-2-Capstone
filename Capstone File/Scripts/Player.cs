@@ -3,37 +3,42 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.AI;
+using static UnityEngine.GraphicsBuffer;
 
 public class Player : MonoBehaviour
 {
     public float speed;
-    public GameObject[] weapons;
-    public GameObject[] grenades;
+    public float slowSpeed;
+    public float standardSpeed; //í•˜ì´ì–´ë¼í‚¤ì°½ì—ì„œ ìˆ˜ì •ì•ˆí•´ë„ ë¨.
+    public GameObject weapon;
     public Camera followCamera;
-    public bool[] hasweapons;
-    public int hasGrenades;
-    public GameObject grenadeObj;
+    public bool hasweapon;
     public GameManager manager;
+    public GameObject ChargeEffect;
+    public GameObject arrow;
 
-    public AudioSource hammerSound;
+    public AudioClip wAttackSound;
+    public AudioClip cAttackSound;
+    public AudioClip DodgeSound;
+    public AudioClip CoinSound;
+    AudioSource audioSource;
 
-    public int ammo;
     public int coin;
     public int health;
     public int score;
 
-    public int maxammo;
     public int maxcoin;
     public int maxhealth;
-    public int maxhasGrenades;
-
 
     float hAxis;
     float vAxis;
 
+    float curChargeTime=0;
+
     bool iDown; //weapon
     bool wDown;
     bool fDown;
+    bool fUp;
     bool gDown;
     bool rDown;
     bool jDown;
@@ -44,23 +49,28 @@ public class Player : MonoBehaviour
 
     bool isJump;
     bool isDodge;
-    bool isSwap;
-    bool isReload;
     bool isFireReady = true;
     bool isBorder;
     bool isDamaged;
     bool isShop;
     bool isDead;
+    bool isClicked;
+    bool isCharge;
+    bool isAttackTurn; // ê³µê²©ì— ì˜í•œ íšŒì „ì„ í•˜ëŠ” ì¤‘ì¸ì§€ ì•„ë‹Œì§€.
+    public bool isInSlowZone;
 
     Vector3 movevec;
     Vector3 dodgevec;
+    Vector3 mousevec;
 
     Animator animator;
     Rigidbody rigid;
-    MeshRenderer[] meshs;
+    //MeshRenderer[] meshs;
+    SkinnedMeshRenderer skMat;
+    Color firstColor; //ì²˜ìŒ ìºë¦­í„° ìƒ‰ìƒ ì €ì¥
 
     GameObject nearobject;
-    public Weapon equipWeapon; //ÀåÂøÁßÀÎ ¹«±â
+    public Weapon equipWeapon; //ì¥ì°©ì¤‘ì¸ ë¬´ê¸°
     int equipWeaponIndex= -1;
     float fireDelay;
 
@@ -68,10 +78,16 @@ public class Player : MonoBehaviour
     {
         animator = GetComponentInChildren<Animator>();
         rigid = GetComponent<Rigidbody>();
-        meshs= GetComponentsInChildren<MeshRenderer>();
+        //meshs= GetComponentsInChildren<MeshRenderer>();
+        skMat = GetComponentInChildren<SkinnedMeshRenderer>();
 
-        PlayerPrefs.SetInt("MaxScore",11200);
+        PlayerPrefs.SetInt("MaxScore",0);
         Debug.Log(PlayerPrefs.GetInt("MaxScore"));
+
+        firstColor = skMat.materials[0].color;
+        standardSpeed = speed;
+
+        this.audioSource = GetComponent<AudioSource>();
     }
 
     void Start()
@@ -84,28 +100,46 @@ public class Player : MonoBehaviour
         GetInput();
         Move();
         Turn();
-        Jump();
+        arrowTurn();
+        RecordFDownTime();
         Attack();
-        Grenade();
-        Reload();
         Dodge();
         interation();
-        Swap();
     }
 
     void GetInput()
     {
         hAxis = Input.GetAxisRaw("Horizontal"); //GetAxisRaw : -1, 0 ,1 
         vAxis = Input.GetAxisRaw("Vertical");
-        wDown = Input.GetButton("Walk");
+        wDown = Input.GetButton("Walk"); //ìˆ˜ì • í•„
         jDown = Input.GetButtonDown("Jump");
-        fDown = Input.GetButton("Fire1");
-        gDown = Input.GetButton("Fire2");
-        rDown = Input.GetButtonDown("Reload");
+        fDown = Input.GetButtonDown("Fire1");
+        fUp = Input.GetButtonUp("Fire1");
         iDown = Input.GetButtonDown("interation");
         sDown1 = Input.GetButtonDown("swap1");
         sDown2 = Input.GetButtonDown("swap2");
         sDown3 = Input.GetButtonDown("swap3");
+    }
+
+    void PlaySound(string action)
+    {
+        switch (action)
+        {
+            case "wAttack":
+                audioSource.clip = wAttackSound;
+                break;
+            case "cAttack":
+                audioSource.clip = cAttackSound;
+                break;
+            case "Dodge":
+                audioSource.clip = DodgeSound;
+                break;
+
+            case "Coin":
+                audioSource.clip = CoinSound;
+                break;
+        }
+        audioSource.Play();
     }
 
     void Move()
@@ -117,42 +151,60 @@ public class Player : MonoBehaviour
             movevec = dodgevec;
         }
 
-        if(isSwap || !isFireReady || isReload || isDead)
+        if( isDead) //!isFireReadyëºŒ
         {
             movevec = Vector3.zero;
         }
 
         if(!isBorder)
         {
-            transform.position += movevec * speed * (wDown ? 0.3f : 1f) * Time.deltaTime;
+            transform.position += movevec * speed  * Time.deltaTime;
         }
 
-        animator.SetBool("Isrun", movevec != Vector3.zero); 
-        animator.SetBool("Iswalk", wDown);
+        animator.SetBool("Iswalk", movevec != Vector3.zero);
+        //animator.SetBool("Iswalk", wDown);
     }
 
     void Turn()
     {
-        //Å°º¸µå È¸Àü
-        transform.LookAt(transform.position + movevec);
-
-        //¸¶¿ì½º È¸Àü
-        if (fDown && !isDead)
+        if(!isAttackTurn)
         {
-            Ray ray = followCamera.ScreenPointToRay(Input.mousePosition);
-            RaycastHit rayHit; //ray¿¡ ´êÀº ¿ÀºêÁ§Æ® Á¤º¸¸¦ ÀúÀåÇÏ´Â º¯¼ö
-            if (Physics.Raycast(ray, out rayHit, 100))
+            //í‚¤ë³´ë“œ íšŒì „
+            transform.LookAt(transform.position + movevec);
+
+            //ë§ˆìš°ìŠ¤ íšŒì „
+            if (fDown && !isDead)
             {
-                Vector3 nextVec = rayHit.point - transform.position;
-                nextVec.y = 0;
-                transform.LookAt(transform.position + nextVec);
+                Ray ray = followCamera.ScreenPointToRay(Input.mousePosition);
+                RaycastHit rayHit; //rayì— ë‹¿ì€ ì˜¤ë¸Œì íŠ¸ ì •ë³´ë¥¼ ì €ì¥í•˜ëŠ” ë³€ìˆ˜
+                if (Physics.Raycast(ray, out rayHit, 100))
+                {
+                    Vector3 nextVec = rayHit.point - transform.position;
+                    nextVec.y = 0;
+                    transform.LookAt(transform.position + nextVec);
+                }
             }
         }
     }
 
+    void arrowTurn()
+    {
+        Ray cameraRay = Camera.main.ScreenPointToRay(Input.mousePosition);
+        Plane GroupPlane = new Plane(Vector3.up, Vector3.zero);
+
+        float rayLength;
+
+        if (GroupPlane.Raycast(cameraRay, out rayLength))
+        {
+            Vector3 pointTolook = cameraRay.GetPoint(rayLength);
+            arrow.transform.LookAt(new Vector3(pointTolook.x, transform.position.y, pointTolook.z));
+        }
+    }
+
+
     void Jump()
     {
-        if(jDown && movevec==Vector3.zero && !isJump && !isDodge &&!isSwap && !isDead)
+        if(jDown && movevec==Vector3.zero && !isJump && !isDodge && !isDead)
         {
             GetComponent<Rigidbody>().AddForce(Vector3.up * 20, ForceMode.Impulse);
             animator.SetBool("Isjump", true);
@@ -163,21 +215,33 @@ public class Player : MonoBehaviour
 
     void Dodge()
     {
-        if (jDown && movevec != Vector3.zero && !isJump && !isDodge && !isSwap && !isDead ) 
+        if (jDown && movevec != Vector3.zero && !isJump && !isDodge && !isDead ) 
         {
-            dodgevec = movevec; 
+            dodgevec = movevec;
+            PlaySound("Dodge");
             animator.SetTrigger("Dododge");
             speed *= 2;
             isDodge = true;
+            Debug.Log(speed);
 
-            Invoke("DodgeOut", 0.5f);
+            Invoke("DodgeOut", 0.7f);
         }
     }
 
     void DodgeOut()
     {
-        speed *= 0.5f;
-        isDodge = false;
+        if(isInSlowZone)
+        {
+            speed = slowSpeed;
+            isDodge = false;
+            return;
+        }
+        else
+        {
+            speed = standardSpeed;
+            isDodge = false;
+        }
+        //speed *= 0.5f;
     }
 
     void interation()
@@ -188,7 +252,8 @@ public class Player : MonoBehaviour
             {
                 Item item = nearobject.GetComponent<Item>();
                 int weaponIndex = item.value;
-                hasweapons[weaponIndex] = true;
+
+                hasweapon = true;
 
                 Destroy(nearobject);
             }
@@ -201,41 +266,6 @@ public class Player : MonoBehaviour
         }
     }
 
-    void Swap()
-    {
-        if (sDown1 && (!hasweapons[0] || equipWeaponIndex == 0)) return; //È¹µæÇÏÁö ¾ÊÀº ¹«±â°Å³ª, ÀÌ¹Ì µé°íÀÖ´Â ¹«±â¸é return
-        if (sDown2 && (!hasweapons[1] || equipWeaponIndex == 1)) return;
-        if (sDown3 && (!hasweapons[2] || equipWeaponIndex == 2)) return;
-
-
-        int weaponIndex = -1;
-        if (sDown1) weaponIndex = 0;
-        if (sDown2) weaponIndex = 1;
-        if (sDown3) weaponIndex = 2;
-
-        if((sDown1 || sDown2 || sDown3) && !isJump && !isDodge && !isDead)
-        {
-            if(equipWeapon!=null)
-            {
-                equipWeapon.gameObject.SetActive(false);
-            }
-            equipWeaponIndex = weaponIndex;
-            equipWeapon = weapons[weaponIndex].GetComponent<Weapon>();
-            equipWeapon.gameObject.SetActive(true);
-
-            animator.SetTrigger("Doswap");
-
-            isSwap = true;
-
-            Invoke("SwapOut", 0.4f);
-        }
-    }
-
-    void SwapOut()
-    {
-        isSwap = false;
-    }
-
     void Attack()
     {
         if (equipWeapon == null) return;
@@ -243,61 +273,74 @@ public class Player : MonoBehaviour
         fireDelay += Time.deltaTime;
         isFireReady = equipWeapon.rate < fireDelay;
 
-        if (fDown && isFireReady && !isDodge && !isSwap && !isShop && !isDead)
+        if (isCharge && isFireReady && !isDodge && !isShop && !isDead && !isClicked)
         {
-            equipWeapon.Use();
-            animator.SetTrigger(equipWeapon.type==Weapon.Type.Melee ? "Doswing" : "Doshot");
-            if (equipWeapon.type == Weapon.Type.Melee) //¿Àµğ¿À Å×½ºÆ®
-                hammerSound.Play();
+            StartCoroutine("SeeToMousePos");
+
+            equipWeapon.ChargeAttack();
+            animator.SetTrigger("Doattack");
+
+            PlaySound("cAttack");
+            fireDelay = 0;
+            isCharge = false;
+        }
+        else if (fUp && isFireReady && !isDodge && !isShop && !isDead && !isCharge)
+        {
+            StopCoroutine("SeeToMousePos");
+            StartCoroutine("SeeToMousePos");
+
+            equipWeapon.MeleeAttack();
+            animator.SetTrigger("Doattack");
+
+            PlaySound("wAttack");
             fireDelay = 0;
         }
     }
 
-    void Reload()
-    {
-        if (equipWeapon == null) return;
-
-        if (equipWeapon.type == Weapon.Type.Melee) return;
-
-        if (ammo == 0) return;
-
-        if(rDown && !isJump && !isDodge && !isSwap && isFireReady && !isShop && !isDead)
+    void SaveMousePos()
+    {    
+        Ray ray = followCamera.ScreenPointToRay(Input.mousePosition);
+        RaycastHit rayHit; //rayì— ë‹¿ì€ ì˜¤ë¸Œì íŠ¸ ì •ë³´ë¥¼ ì €ì¥í•˜ëŠ” ë³€ìˆ˜
+        if (Physics.Raycast(ray, out rayHit, 100))
         {
-            animator.SetTrigger("Doreload");
-            isReload = true;
+            mousevec = rayHit.point; //ë§ˆìš°ìŠ¤ ëˆ„ë¥¸ ìœ„ì¹˜ ì €ì¥
+        }    
+    }
 
-            Invoke("ReloadOut", 1.0f);
+    IEnumerator SeeToMousePos()
+    {
+        Vector3 tomouse = mousevec - transform.position;
+        tomouse.y = 0;
+        transform.LookAt(transform.position+tomouse);
+
+        isAttackTurn = true;
+        yield return new WaitForSeconds(0.5f);
+
+        isAttackTurn = false;
+    }
+   
+    void RecordFDownTime() //ê³µê²©ë²„íŠ¼ ëˆ„ë¥¸ ì‹œê°„ ê¸°ë¡
+    {
+        if (fDown)
+        {
+            isClicked = true;
         }
-    }
+        if (fUp)
+        {   
+            ChargeEffect.SetActive(false);
+            isClicked = false;
+            curChargeTime = 0;
+        }
 
-    void ReloadOut()
-    {
-        int reAmmo = ammo < equipWeapon.maxAmmo ? ammo : equipWeapon.maxAmmo; //maxAmmo:40, ammo:10ÀÏ ¶§, ammo¸¸Å­ ÀåÀüµÇ¾î¾ßÇÔ.
-        equipWeapon.curAmmo = reAmmo;
-        ammo -= reAmmo; //ÀåÀüÇÑ ¸¸Å­ »©ÁÖ±â
-        isReload = false;
-    }
-
-    void Grenade()
-    {
-        if (hasGrenades == 0) return;
-
-        if(gDown &&  !isReload && !isSwap && !isShop && !isDead)
+        if (isClicked)
         {
-            Ray ray = followCamera.ScreenPointToRay(Input.mousePosition);
-            RaycastHit rayHit; //ray¿¡ ´êÀº Á¤º¸¸¦ ÀúÀåÇÏ´Â º¯¼ö
-            if (Physics.Raycast(ray, out rayHit, 100))
+            SaveMousePos();
+            ChargeEffect.SetActive(true);
+            curChargeTime += Time.deltaTime;
+
+            if (curChargeTime >= equipWeapon.maxChargeTime)
             {
-                Vector3 nextVec = rayHit.point - transform.position;
-                nextVec.y = 10;
-
-                GameObject instantGrenade = Instantiate(grenadeObj, transform.position, transform.rotation);
-                Rigidbody rigidGrenade = instantGrenade.GetComponent<Rigidbody>();
-                rigidGrenade.AddForce(nextVec, ForceMode.Impulse);
-                rigidGrenade.AddTorque(Vector3.back * 10, ForceMode.Impulse);
-
-                hasGrenades--;
-                grenades[hasGrenades].SetActive(false);
+                isCharge = true;
             }
         }
     }
@@ -318,61 +361,43 @@ public class Player : MonoBehaviour
         StopToWall();
     }
 
-    private void OnCollisionEnter(Collision collision)
+    /*private void OnCollisionEnter(Collision collision)
     {
         if(collision.gameObject.tag=="Floor")
         {
             animator.SetBool("Isjump", false);
             isJump = false;
         }
-    }
+    }*/ //ì í”„ëª¨ì…˜ ì¶”ê°€ë˜ë©´ í™œì„±í™”
 
     private void OnTriggerEnter(Collider other)
     {
-        if(other.tag=="Item")
+        if (other.tag == "Item")
         {
             Item item = other.GetComponent<Item>();
-            switch(item.type)
+            switch (item.type)
             {
-                case Item.Type.Ammo:
-                    ammo += item.value;
-                    if( ammo >maxammo)
-                    {
-                        ammo = maxammo;
-                    }
-                    break;
-
                 case Item.Type.Coin:
                     coin += item.value;
+                    //PlaySound("Coin");
                     if (coin > maxcoin)
                     {
                         coin = maxcoin;
                     }
                     break;
-
                 case Item.Type.Heart:
                     health += item.value;
                     if (health > maxhealth)
                     {
-                        health=maxhealth;
-                    }
-                    break;
-
-                case Item.Type.Grenade:
-                    grenades[hasGrenades].SetActive(true);
-                    hasGrenades += item.value;
-                    if (hasGrenades > maxhasGrenades)
-                    {
-                        hasGrenades = maxhasGrenades;
+                        health = maxhealth;
                     }
                     break;
             }
-
             Destroy(other.gameObject);
         }
-        else if(other.tag=="EnemyBullet")
+        else if (other.tag == "EnemyBullet")
         {
-            if(!isDamaged)
+            if (!isDamaged)
             {
                 Bullet enemyBullet = other.GetComponent<Bullet>();
                 health -= enemyBullet.damage;
@@ -385,16 +410,35 @@ public class Player : MonoBehaviour
             if (other.GetComponent<Rigidbody>() != null)
                 Destroy(other.gameObject);
         }
+        else if(other.tag=="FallingObject")
+        {
+            if(!isDamaged)
+            {
+                FallingObject fallingObj = other.GetComponent<FallingObject>();
+                health -= fallingObj.Damage;
+                fallingObj.particle.gameObject.SetActive(true);
+
+                Vector3 reactVec = gameObject.transform.position - other.transform.position;
+                reactVec = reactVec.normalized;
+                rigid.AddForce(reactVec * 5,ForceMode.Impulse);
+
+                StartCoroutine(OnDamage(false));
+
+                Destroy(other.gameObject);
+            }
+        }
+        else if (other.tag == "SlowZone")
+        {
+            isInSlowZone = true;
+            speed = slowSpeed;
+        }
     }
 
     IEnumerator OnDamage(bool isBossAttack)
     {
         isDamaged = true;
 
-        foreach(MeshRenderer mesh in meshs)
-        {
-            mesh.material.color = Color.yellow;
-        }
+        skMat.materials[0].color = Color.yellow;
 
         if(isBossAttack)
         {
@@ -410,12 +454,9 @@ public class Player : MonoBehaviour
 
         isDamaged = false;
 
-        foreach (MeshRenderer mesh in meshs)
-        {
-            mesh.material.color = Color.white;
-        }
+        skMat.materials[0].color = firstColor;
 
-        if(isBossAttack)
+        if (isBossAttack)
         {
             rigid.velocity = Vector3.zero;
         }
@@ -435,22 +476,30 @@ public class Player : MonoBehaviour
         {
             nearobject = other.gameObject;
         }
-        
     }
 
     private void OnTriggerExit(Collider other)
     {
-        if(other.tag == "Weapon")
-        {
-            nearobject = null;
-        }
-        else if (other.tag == "Shop")
+
+        //if(other.tag == "Weapon")
+        //{
+        //    nearobject = null;
+        //}
+        //ìœ„ ì½”ë“œ ë•Œë¬¸ì—, weapon Shopì—ì„œ ë¬´ê¸° êµ¬ë§¤ í›„ ë¬´ê¸°ê°€ ê°€ê¹Œì´ì— ìˆìœ¼ë©´ nullì²˜ë¦¬ë˜ì–´ ì•„ë˜ë¬¸ì¥ì— ì—ëŸ¬ê°€ ìƒê¹€.
+        //(nearobjectê°€ nullì´ ë˜ì–´ë²„ë ¤ì„œ ìƒì ì—ì„œ ë‚˜ì™€ì§€ì§€ ì•ŠìŒ)
+        //ìœ„ ì½”ë“œê°€ í•„ìš”í•´ì§ˆ ì‹œ, ì£¼ì„ì„ í•´ì œí•˜ê³ , weapon Shopì˜ weapon spawn posì„ ë©€ë¦¬ ë–¨ì–´ì§„ ê³³ìœ¼ë¡œ ì˜®ê¸°ê¸°.
+        if (other.tag == "Shop")
         {
             Shop shop = nearobject.GetComponent<Shop>();
             shop.Exit();
             isShop = false;
 
             nearobject = null;
+        }
+        else if(other.tag=="SlowZone")
+        {
+            isInSlowZone = false;
+            speed = standardSpeed;
         }
     }
 }
