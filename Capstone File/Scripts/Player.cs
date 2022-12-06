@@ -10,6 +10,7 @@ public class Player : MonoBehaviour
     public float speed;
     public float slowSpeed;
     public float standardSpeed; //하이어라키창에서 수정안해도 됨.
+
     public GameObject weapon;
     public Camera followCamera;
     public bool hasweapon;
@@ -22,7 +23,8 @@ public class Player : MonoBehaviour
     public AudioClip DodgeSound;
     public AudioClip CoinSound;
     AudioSource audioSource;
-
+    
+    public AudioSource hammerSound;
     public int coin;
     public int health;
     public int score;
@@ -58,6 +60,7 @@ public class Player : MonoBehaviour
     bool isCharge;
     bool isAttackTurn; // 공격에 의한 회전을 하는 중인지 아닌지.
     public bool isInSlowZone;
+
 
     Vector3 movevec;
     Vector3 dodgevec;
@@ -330,14 +333,6 @@ public class Player : MonoBehaviour
             ChargeEffect.SetActive(false);
             isClicked = false;
             curChargeTime = 0;
-        }
-
-        if (isClicked)
-        {
-            SaveMousePos();
-            ChargeEffect.SetActive(true);
-            curChargeTime += Time.deltaTime;
-
             if (curChargeTime >= equipWeapon.maxChargeTime)
             {
                 isCharge = true;

@@ -14,7 +14,7 @@ public class Enemy : MonoBehaviour
     public GameManager manager;
     public Transform Target;
     public bool isChase;
-    public BoxCollider MeleeArea; //Í≥µÍ≤©Î≤îÏúÑ
+    public BoxCollider MeleeArea; //∞¯∞›π¸¿ß
     public GameObject bullet;
     public bool isAttack;
     public bool isDead;
@@ -22,43 +22,22 @@ public class Enemy : MonoBehaviour
 
     public Rigidbody rigid;
     public BoxCollider boxCollider;
-    //public MeshRenderer[] mat;
-    public SkinnedMeshRenderer skMat;
-    public Color firstColor; //ÏõêÎûò ÏÉâÏÉÅ Ï†ÄÏû•.
-
+    public MeshRenderer[] mat;
     public NavMeshAgent nav;
     public Animator anim;
-
-    public AudioClip HitSound;
-    AudioSource audioSource;
 
     private void Awake()
     {
         rigid = GetComponent<Rigidbody>();
         boxCollider = GetComponent<BoxCollider>();
-        //mat = GetComponentsInChildren<MeshRenderer>();
-        skMat = GetComponentInChildren<SkinnedMeshRenderer>();
+        mat = GetComponentsInChildren<MeshRenderer>();
         nav = GetComponent<NavMeshAgent>();
         anim = GetComponentInChildren<Animator>();
-        this.audioSource = GetComponent<AudioSource>();
-
-        firstColor = skMat.materials[0].color;
 
         if (enemyType!=Type.D)
         {
-            Invoke("ChaseStart", 1.0f);
+            Invoke("ChaseStart", 2.0f);
         }
-    }
-
-    void PlaySound(string action)
-    {
-        switch (action)
-        {
-            case "Hit":
-                audioSource.clip = HitSound;
-                break;
-        }
-        audioSource.Play();
     }
 
     void ChaseStart()
@@ -79,7 +58,7 @@ public class Enemy : MonoBehaviour
         if(nav.enabled && enemyType != Type.D)
         {
             nav.SetDestination(Target.position);
-            nav.isStopped = !isChase;  //Ï´ìÎäî Ï§ëÏù¥Î©¥ ÏïàÎ©àÏ∂îÍ≥†, Ï´ìÎäî Ï§ëÏù¥ ÏïÑÎãàÎ©¥ Î©àÏ∂§
+            nav.isStopped = !isChase;  //¬—¥¬ ¡ﬂ¿Ã∏È æ»∏ÿ√ﬂ∞Ì, ¬—¥¬ ¡ﬂ¿Ã æ∆¥œ∏È ∏ÿ√„
         }
     }
 
@@ -105,16 +84,6 @@ public class Enemy : MonoBehaviour
                     targetRadius = 1.5f;
                     targetRange = 3f;
                     break;
-
-
-                case Type.B:
-                    targetRadius = 1.0f;
-                    targetRange = 3f;
-                    break;
-
-                case Type.C:
-                    targetRadius = 3.0f;
-                    targetRange = 3f;
                 case Type.B:
                     targetRadius = 1f;
                     targetRange = 10f;
@@ -129,7 +98,7 @@ public class Enemy : MonoBehaviour
                 transform.forward, targetRange,
                 LayerMask.GetMask("Player"));
 
-            if (rayHits.Length > 0 && !isAttack) //Ï∂©ÎèåÌïúÍ≤å ÏûàÏúºÎ©¥
+            if (rayHits.Length > 0 && !isAttack) //√Êµπ«—∞‘ ¿÷¿∏∏È
             {
                 StartCoroutine(Attack());
             }
@@ -145,35 +114,32 @@ public class Enemy : MonoBehaviour
         switch (enemyType)
         {
             case Type.A:
-                yield return new WaitForSeconds(0.75f);
-                
+                yield return new WaitForSeconds(0.3f);
                 MeleeArea.enabled = true;
 
-                yield return new WaitForSeconds(0.3f);
+                yield return new WaitForSeconds(1.0f);
                 MeleeArea.enabled = false;
 
                 yield return new WaitForSeconds(1.0f);
                 break;
-
-
             case Type.B:
-                yield return new WaitForSeconds(0.75f);
+                yield return new WaitForSeconds(0.1f);
+                rigid.AddForce(transform.forward * 20, ForceMode.Impulse);
                 MeleeArea.enabled = true;
 
-                yield return new WaitForSeconds(0.3f);
+                yield return new WaitForSeconds(0.5f);
+                rigid.velocity = Vector3.zero;
                 MeleeArea.enabled = false;
 
-                yield return new WaitForSeconds(1.0f);
+                yield return new WaitForSeconds(2f);
                 break;
-
             case Type.C:
-                yield return new WaitForSeconds(1.5f);
-                MeleeArea.enabled = true;
+                yield return new WaitForSeconds(0.5f);
+                GameObject instantBullet = Instantiate(bullet, transform.position, transform.rotation);
+                Rigidbody rigidBullet = instantBullet.GetComponent<Rigidbody>();
+                rigidBullet.velocity = transform.forward * 20;
 
-                yield return new WaitForSeconds(0.3f);
-                MeleeArea.enabled = false;
-
-                yield return new WaitForSeconds(1.5f);
+                yield return new WaitForSeconds(2f);
                 break;
         }
         isChase = true;
@@ -191,51 +157,56 @@ public class Enemy : MonoBehaviour
     {
         if(other.tag=="Melee")
         {
-            AttackAreaWeaponInfo atk = other.GetComponent<AttackAreaWeaponInfo>();
-            Weapon weapon = atk.matchWeaponGameObject.GetComponent<Weapon>();
-            curHealth -= weapon.meleeDamage;
-            if (curHealth <= 0) curHealth = 0;
+            Weapon weapon = other.GetComponent<Weapon>();
+            curHealth -= weapon.damage;
 
             Vector3 reactVec = transform.position - other.transform.position;
             StartCoroutine(OnDamage(reactVec, false));
 
         }
-        else if(other.tag=="ChargeMelee")
+        else if (other.tag=="Bullet")
         {
-            AttackAreaWeaponInfo atk = other.GetComponent<AttackAreaWeaponInfo>();
-            Weapon weapon = atk.matchWeaponGameObject.GetComponent<Weapon>();
-            curHealth -= weapon.chargeDamage;
-            if (curHealth <= 0) curHealth = 0;
-            Debug.Log("Ï†ÅÏù¥ Ï∞®ÏßïÍ≥µÍ≤©ÏùÑ ÎßûÏïòÎã§!!");
+            Bullet bullet = other.GetComponent<Bullet>();
+            curHealth -= bullet.damage;
 
             Vector3 reactVec = transform.position - other.transform.position;
+            Destroy(other.gameObject);
             StartCoroutine(OnDamage(reactVec, false));
+
         }
     }
 
     IEnumerator OnDamage(Vector3 reactVec, bool isGrenade)
     {
-        PlaySound("Hit");
-        skMat.materials[0].color = Color.red;
+        //∏ÛΩ∫≈Õ Ω√√ºø° ∂« √—¿ª ΩÓ∏È, ∏ÛΩ∫≈Õcount∞° ¡ŸæÓµÈ±Ê∑° √ﬂ∞°«ÿ∫Ω.
+        if (isDead)
+            yield break;
+
+        foreach(MeshRenderer mesh in mat)
+        {
+            mesh.material.color = Color.red;
+        }
 
         yield return new WaitForSeconds(0.1f);
 
         if(curHealth>0)
         {
-            skMat.materials[0].color = firstColor;
+            foreach (MeshRenderer mesh in mat)
+            {
+                mesh.material.color = Color.white;
+            }
         }
         else
         {
-            //Î™¨Ïä§ÌÑ∞ ÏãúÏ≤¥Ïóê Îòê Ï¥ùÏùÑ ÏèòÎ©¥, Î™¨Ïä§ÌÑ∞countÍ∞Ä Ï§ÑÏñ¥Îì§Í∏∏Îûò Ï∂îÍ∞ÄÌï¥Î¥Ñ.
-            if (isDead)
+            foreach (MeshRenderer mesh in mat)
             {
-                yield break;
+                mesh.material.color = Color.gray;
             }
-            skMat.materials[0].color = Color.gray;
 
-            gameObject.layer = 12;
+            gameObject.layer = 14;
+            isDead = true;
             isChase = false;
-            nav.enabled = false; //ÏÇ¨ÎßùÎ¶¨Ïï°ÏÖòÏùÑ Ïú†ÏßÄÌïòÍ∏∞ ÏúÑÌï¥ nav ÎÅî
+            nav.enabled = false; //ªÁ∏¡∏Ææ◊º«¿ª ¿Ø¡ˆ«œ±‚ ¿ß«ÿ nav ≤˚
             anim.SetTrigger("Dodie");
 
             Player player = Target.GetComponent<Player>();
@@ -248,21 +219,18 @@ public class Enemy : MonoBehaviour
                 case Type.A:
                     manager.enemyCntA--;
                     break;
-
                 case Type.B:
                     manager.enemyCntB--;
                     break;
-
                 case Type.C:
                     manager.enemyCntC--;
                     break;
-
                 case Type.D:
                     manager.enemyCntD--;
                     break;
             }
 
-            /*if (isGrenade)
+            if (isGrenade)
             {
                 reactVec = reactVec.normalized;
                 reactVec += Vector3.up * 3;
@@ -270,14 +238,15 @@ public class Enemy : MonoBehaviour
                 rigid.freezeRotation = false;
                 rigid.AddForce(reactVec * 5, ForceMode.Impulse);
                 rigid.AddTorque(reactVec * 15, ForceMode.Impulse);
-            }*/     
-            
-            reactVec = reactVec.normalized;
-            reactVec += Vector3.up;
-            rigid.AddForce(reactVec * 5, ForceMode.Impulse);
-            
+            }
+            else
+            {
+                reactVec = reactVec.normalized;
+                reactVec += Vector3.up;
+                rigid.AddForce(reactVec * 5, ForceMode.Impulse);
+            }
              Destroy(gameObject, 4);
-             isDead = true;
+            
         }
     }
 }
